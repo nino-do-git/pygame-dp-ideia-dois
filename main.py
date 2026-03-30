@@ -8,6 +8,9 @@ SCREEN_HEIGHT = 600
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Braw Bizarre")
 
+clock = pygame.time.Clock()
+FPS = 60
+
 bg_image = pygame.image.load("assets/images/Background_deserto.jpg").convert_alpha()
 
 def draw_bg():
@@ -20,9 +23,10 @@ fighter_2 = Fighter(700, 310)
 
 run = True
 while run:
+    clock.tick(FPS)
     draw_bg()
-    fighter_1.move()
-    fighter_2.move()
+    fighter_1.move(SCREEN_WIDTH)
+    
     fighter_1.draw(screen)
     fighter_2.draw(screen)
     for event in pygame.event.get():
