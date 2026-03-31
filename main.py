@@ -11,13 +11,18 @@ pygame.display.set_caption("Braw Bizarre")
 clock = pygame.time.Clock()
 FPS = 60
 
+RED = (255, 0, 0)
+YELLOW = (255, 255, 0)
+WHITE = (255, 255, 255)
+
 bg_image = pygame.image.load("assets/images/Background_deserto.jpg").convert_alpha()
 
 def draw_bg():
     scaled_bg = pygame.transform.scale(bg_image, (SCREEN_WIDTH, SCREEN_HEIGHT))
     screen.blit(scaled_bg, (0, 0))
 
-
+def draw_health_bar(health, x, y):
+    pygame.draw.rect(screen, YELLOW, (x, y, 400, 30))
 fighter_1 = Fighter(200, 310)
 fighter_2 = Fighter(700, 310)
 
