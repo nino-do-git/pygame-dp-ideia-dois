@@ -2,6 +2,7 @@ import pygame
 
 class Fighter():
     def __init__(self, x, y):
+        self.flip = False
         self.rect = pygame.Rect((x, y, 80, 180))
         self.vel_y = 0
         self.jump = False
@@ -43,13 +44,17 @@ class Fighter():
             self.vel_y = 0
             self.jump = False
             dy = screen_height - 110 - self.rect.bottom
+        if target.rect.centerx > self.rect.centerx:
+            self.flip =  False
+        else:
+            self.flip = True
 
         self.rect.x += dx
         self.rect.y += dy
 
     def attack(self, surface, target):
         self.attacking = True
-        attacking_rect = pygame.Rect(self.rect.centerx, self.rect.y, 2 * self.rect.width, self.rect.height)
+        attacking_rect = pygame.Rect(self.rect.centerx - (2 * self.rect.width * self.flip), self.rect.y, 2 * self.rect.width, self.rect.height)
         if attacking_rect.colliderect(target.rect):
             target.health -= 10
         pygame.draw.rect(surface, (0, 255, 0), attacking_rect)
