@@ -27,8 +27,8 @@ def draw_health_bar(health, x, y):
     pygame.draw.rect(screen, WHITE, (x - 2, y - 2, 404, 34))
     pygame.draw.rect(screen, RED, (x, y, 400, 30))
     pygame.draw.rect(screen, GREEN, (x, y, 400 * ratio, 30))
-fighter_1 = Fighter(200, 310)
-fighter_2 = Fighter(700, 310)
+fighter_1 = Fighter(200, 310, is_ai=False)
+fighter_2 = Fighter(700, 310, is_ai=True)
 
 run = True
 while run:
@@ -40,6 +40,8 @@ while run:
     fighter_1.move(SCREEN_WIDTH, SCREEN_HEIGHT, screen, fighter_2)
     fighter_1.update()
     fighter_1.draw(screen)
+
+    fighter_2.ai_move(SCREEN_WIDTH, SCREEN_HEIGHT, screen, fighter_1)
     fighter_2.update()
     fighter_2.draw(screen)
     for event in pygame.event.get():
