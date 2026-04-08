@@ -17,7 +17,7 @@ WHITE = (255, 255, 255)
 GREEN = (0, 255, 0)
 
 bg_image = pygame.image.load("assets/images/Background_deserto.jpg").convert_alpha()
-menu_font = pygame.font.SysFont(None, 64)
+menu_font = pygame.font.Font("assets/fonts/gorefont.ttf", 64)
 menu_subfont = pygame.font.SysFont(None, 36)
 
 def draw_bg():
@@ -32,7 +32,7 @@ def draw_health_bar(health, x, y):
 
 def draw_start_screen():
     screen.fill((0, 0, 0))
-    title = menu_font.render("Braw Bizarre", True, WHITE)
+    title = menu_font.render("Braw Bizarre", True, RED)
     prompt = menu_subfont.render("Pressione qualquer tecla para jogar", True, YELLOW)
     instructions = menu_subfont.render("W = pular, A/D = mover, R = atacar", True, WHITE)
 
