@@ -251,7 +251,7 @@ class Vampire():
         self.vel_y = 0
         self.jump = False
         self.attacking = False
-        self.health = 100
+        self.health = 50
         self.last_health = 100
         self.last_attack_time = 0
         self.frame_index = 0

@@ -12,7 +12,9 @@ FPS = 60
 
 RED, YELLOW, WHITE, GREEN, GRAY = (255,0,0), (255,255,0), (255,255,255), (0,255,0), (50,50,50)
 
-bg_image = pygame.image.load("assets/images/Background_deserto.jpg").convert_alpha()
+bg_image1 = pygame.image.load("assets/images/Background_deserto.jpg").convert_alpha()
+bg_image2 = pygame.image.load("assets/images/background2.png").convert_alpha()
+
 gore_font = "assets/fonts/gorefont.ttf"
 menu_font = pygame.font.Font(gore_font, 64)
 level_font = pygame.font.Font(gore_font, 100)
@@ -28,7 +30,9 @@ def scale_aspect(img):
 
 comic2 = scale_aspect(pygame.image.load("assets/images/quadrinhos/Quadrinho2.png").convert_alpha())
 comic3 = scale_aspect(pygame.image.load("assets/images/quadrinhos/Quadrinho3.png").convert_alpha())
-comics = [comic1, comic2, comic3]
+comic4 = scale_aspect(pygame.image.load("assets/images/quadrinhos/Quadrinho4.png").convert_alpha())
+comic5 = scale_aspect(pygame.image.load("assets/images/quadrinhos/Quadrinho5.png").convert_alpha())
+comics = [comic1, comic2, comic3, comic4, comic5]
 
 game_started = level_selection = in_cutscene = is_fading = game_over_lost = False
 next_state = None
@@ -37,6 +41,7 @@ fade_surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
 fade_surface.fill((0,0,0))
 current_level = 1
 comic_index = 0
+pacifist_timer = 0
 
 level_rects = [
     pygame.Rect(150, 150, 200, 150),
@@ -51,7 +56,8 @@ fighter_1 = Fighter(200, 380, is_ai=False)
 fighter_2 = Fighter(700, 380, is_ai=True, behavior="passive")
 
 def draw_interface():
-    scaled_bg = pygame.transform.scale(bg_image, (SCREEN_WIDTH, SCREEN_HEIGHT))
+    bg = bg_image2 if current_level == 2 else bg_image1
+    scaled_bg = pygame.transform.scale(bg, (SCREEN_WIDTH, SCREEN_HEIGHT))
     screen.blit(scaled_bg, (0, 0))
     draw_health_bar(fighter_1.health, 20, 20)
     draw_health_bar(fighter_2.health, 580, 20)
@@ -114,7 +120,12 @@ while run:
                                 is_fading, next_state = True, "CUTSCENE"
                             elif current_level == 2:
                                 fighter_2 = Vampire(700, 380, behavior="bully")
-                                is_fading, next_state = True, "GAMEPLAY"
+                                comic_index = 3
+                                is_fading, next_state = True, "CUTSCENE"
+                            elif current_level == 3:
+                                fighter_2 = Fighter(700, 380, is_ai=True, behavior="bully")
+                                comic_index = 4
+                                is_fading, next_state = True, "CUTSCENE"
                             elif current_level == 6:
                                 fighter_2 = Fighter(700, 380, is_ai=True, behavior="bully", character="astronaut")
                                 is_fading, next_state = True, "GAMEPLAY"
@@ -126,9 +137,12 @@ while run:
                     is_fading, next_state = True, "START_SCREEN"
             elif in_cutscene:
                 if event.type == pygame.MOUSEBUTTONDOWN:
-                    if comic_index < 2:
+                    max_comic = 2 if current_level == 1 else comic_index
+                    if comic_index < max_comic:
                         is_fading, next_state = True, "NEXT_COMIC"
                     else:
+                        if current_level == 1:
+                            pacifist_timer = pygame.time.get_ticks()
                         is_fading, next_state = True, "GAMEPLAY"
             elif game_over_lost:
                 if event.type == pygame.MOUSEBUTTONDOWN:
@@ -138,11 +152,26 @@ while run:
         draw_interface()
         fighter_1.move(SCREEN_WIDTH, SCREEN_HEIGHT, fighter_2)
         fighter_2.ai_logic(SCREEN_WIDTH, SCREEN_HEIGHT, fighter_1)
+        
+        if current_level == 1:
+            keys = pygame.key.get_pressed()
+            if keys[pygame.K_r]:
+                pacifist_timer = pygame.time.get_ticks()
+            if pygame.time.get_ticks() - pacifist_timer > 10000 and not is_fading:
+                comic_index = 3
+                is_fading, next_state = True, "TRANSITION_L1_L2"
+
         for f in [fighter_1, fighter_2]:
             f.update()
             f.draw(screen)
-        if current_level == 1 and fighter_2.health <= 0:
+            
+        if current_level == 1 and fighter_2.health <= 0 and not is_fading:
             is_fading, next_state = True, "LOST_SCREEN"
+        
+        if current_level == 2 and fighter_2.health <= 0 and not is_fading:
+            comic_index = 4
+            is_fading, next_state = True, "TRANSITION_L2_L3"
+            
     elif level_selection: draw_levels()
     elif in_cutscene: draw_cutscene()
     elif game_over_lost: draw_lost_screen()
@@ -155,6 +184,16 @@ while run:
             if next_state == "NEXT_COMIC":
                 comic_index += 1
             elif next_state == "CUTSCENE":
+                in_cutscene, level_selection, game_started, game_over_lost = True, False, False, False
+            elif next_state == "TRANSITION_L1_L2":
+                current_level = 2
+                fighter_1 = Fighter(200, 380, is_ai=False)
+                fighter_2 = Vampire(700, 380, behavior="bully")
+                in_cutscene, level_selection, game_started, game_over_lost = True, False, False, False
+            elif next_state == "TRANSITION_L2_L3":
+                current_level = 3
+                fighter_1 = Fighter(200, 380, is_ai=False)
+                fighter_2 = Fighter(700, 380, is_ai=True, behavior="bully")
                 in_cutscene, level_selection, game_started, game_over_lost = True, False, False, False
             elif next_state == "GAMEPLAY":
                 game_started, level_selection, in_cutscene, game_over_lost = True, False, False, False
