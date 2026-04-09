@@ -1,5 +1,6 @@
 import pygame
-from fighter import Fighter, Vampire
+from fighter import Fighter
+from vampire import Vampire
 
 pygame.init()
 
