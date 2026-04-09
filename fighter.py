@@ -2,14 +2,15 @@ import pygame
 import random
 
 class Fighter():
-    def __init__(self, x, y, is_ai=False):
+    def __init__(self, x, y, is_ai=False, behavior="passive"):
         self.is_ai = is_ai
         self.flip = False
-        self.rect = pygame.Rect((x, y, 80, 130))
+        self.rect = pygame.Rect((x, y, 40, 80))
         self.vel_y = 0
         self.jump = False
         self.attacking = False
         self.health = 100
+        self.last_health = 100
         self.last_attack_time = 0
         self.frame_index = 0
         self.update_time = pygame.time.get_ticks()
@@ -20,21 +21,26 @@ class Fighter():
 
         self.ai_direction = 0
         self.last_ai_decision = 0
+        self.behavior = behavior
+        self.aggro = False if behavior == "passive" else True
 
     def load_assets(self):
         SCALE = 1.4
-        IDLE_SCALE = SCALE * 0.35
         
         if not self.is_ai:
+            IDLE_SCALE = SCALE * 0.35
             path = "assets/images/astronauta"
             self.idle = [self.load_img(f"{path}/idlefuturista.png", IDLE_SCALE)]
             self.walk = [self.load_img(f"{path}/walk{i}futurista.png", SCALE) for i in range(1, 4)]
             self.attack_anim = [self.load_img(f"{path}/attack{i}futurista.png", SCALE) for i in range(1, 4)]
             self.death = [self.load_img(f"{path}/die{i}futurista.png", SCALE) for i in range(1, 4)]
         else:
-            self.image_placeholder = pygame.Surface((80, 130))
-            self.image_placeholder.fill((255, 0, 0))
-            self.idle = self.walk = self.attack_anim = self.death = [self.image_placeholder]
+            ET_IDLE_SCALE = SCALE * 0.756
+            path = "assets/images/et"
+            self.idle = [self.load_img(f"{path}/idlegnomo.png", ET_IDLE_SCALE)]
+            self.walk = [self.load_img(f"{path}/walk{i}ET.png", SCALE) for i in range(1, 4)]
+            self.attack_anim = [self.load_img(f"{path}/attack{i}ET.png", SCALE) for i in range(1, 4)]
+            self.death = [self.load_img(f"{path}/idlegnomo.png", ET_IDLE_SCALE)]
 
     def load_img(self, path, scale):
         img = pygame.image.load(path).convert_alpha()
@@ -76,23 +82,41 @@ class Fighter():
         dist = abs(self.rect.centerx - target.rect.centerx)
         now = pygame.time.get_ticks()
 
+        if self.health < self.last_health:
+            self.aggro = True
+        self.last_health = self.health
+
         if self.health > 0:
-            if now - self.last_ai_decision > 600:
-                self.last_ai_decision = now
-                if target.rect.centerx < self.rect.centerx:
-                    self.ai_direction = -SPEED
-                    self.flip = True
-                else:
-                    self.ai_direction = SPEED
-                    self.flip = False
+            if not self.aggro:
+                if now - self.last_ai_decision > 1000:
+                    self.last_ai_decision = now
+                    self.ai_direction = random.choice([-SPEED, 0, SPEED])
+                    if self.ai_direction < 0:
+                        self.flip = True
+                    elif self.ai_direction > 0:
+                        self.flip = False
+                
+                dx = self.ai_direction
+                if random.randint(1, 100) <= 2 and not self.jump:
+                    self.vel_y = -30
+                    self.jump = True
+            else:
+                if now - self.last_ai_decision > 600:
+                    self.last_ai_decision = now
+                    if target.rect.centerx < self.rect.centerx:
+                        self.ai_direction = -SPEED
+                        self.flip = True
+                    else:
+                        self.ai_direction = SPEED
+                        self.flip = False
 
-            dx = self.ai_direction
-            if random.randint(1, 100) <= 4 and not self.jump:
-                self.vel_y = -30
-                self.jump = True
+                dx = self.ai_direction
+                if random.randint(1, 100) <= 4 and not self.jump:
+                    self.vel_y = -30
+                    self.jump = True
 
-            if dist < 150:
-                self.attack(target)
+                if dist < 150:
+                    self.attack(target)
 
         self.vel_y += GRAVITY
         dy += self.vel_y
@@ -160,10 +184,7 @@ class Fighter():
         self.image = self.current_animation[self.frame_index]
 
     def draw(self, surface):
-        if not self.is_ai:
-            img = pygame.transform.flip(self.image, self.flip, False)
-            draw_x = self.rect.centerx - (img.get_width() // 2)
-            draw_y = self.rect.bottom - img.get_height()
-            surface.blit(img, (draw_x, draw_y))
-        else:
-            pygame.draw.rect(surface, (255, 0, 0), self.rect)
+        img = pygame.transform.flip(self.image, self.flip, False)
+        draw_x = self.rect.centerx - (img.get_width() // 2)
+        draw_y = self.rect.bottom - img.get_height()
+        surface.blit(img, (draw_x, draw_y))

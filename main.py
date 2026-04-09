@@ -32,7 +32,7 @@ level2_rect = pygame.Rect(400, 250, 200, 150)
 level3_rect = pygame.Rect(650, 250, 200, 150)
 
 fighter_1 = Fighter(200, 380, is_ai=False)
-fighter_2 = Fighter(700, 380, is_ai=True)
+fighter_2 = Fighter(700, 380, is_ai=True, behavior="passive")
 
 def draw_interface():
     scaled_bg = pygame.transform.scale(bg_image, (SCREEN_WIDTH, SCREEN_HEIGHT))
