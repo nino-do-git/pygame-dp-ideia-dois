@@ -5,7 +5,7 @@ pygame.init()
 
 SCREEN_WIDTH, SCREEN_HEIGHT = 1000, 600
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-pygame.display.set_caption("Braw Bizarre")
+pygame.display.set_caption("Eclipse Lunar")
 
 clock = pygame.time.Clock()
 FPS = 60
@@ -33,7 +33,9 @@ comic2 = scale_aspect(pygame.image.load("assets/images/quadrinhos/Quadrinho2.png
 comic3 = scale_aspect(pygame.image.load("assets/images/quadrinhos/Quadrinho3.png").convert_alpha())
 comic4 = scale_aspect(pygame.image.load("assets/images/quadrinhos/Quadrinho4.png").convert_alpha())
 comic5 = scale_aspect(pygame.image.load("assets/images/quadrinhos/Quadrinho5.png").convert_alpha())
-comics = [comic1, comic2, comic3, comic4, comic5]
+comic_prologo = scale_aspect(pygame.image.load("assets/images/quadrinhos/Quadrinhoprologo.png").convert_alpha())
+comic_1e_prologo = scale_aspect(pygame.image.load("assets/images/quadrinhos/Quadrinho1eprologo.png").convert_alpha())
+comics = [comic1, comic_prologo, comic_1e_prologo, comic2, comic3, comic4, comic5]
 
 game_started = level_selection = in_cutscene = is_fading = game_over_lost = False
 next_state = None
@@ -144,7 +146,7 @@ while run:
                     is_fading, next_state = True, "START_SCREEN"
             elif in_cutscene:
                 if event.type == pygame.MOUSEBUTTONDOWN:
-                    max_comic = 2 if current_level == 1 else comic_index
+                    max_comic = 4 if current_level == 1 else comic_index
                     if comic_index < max_comic:
                         is_fading, next_state = True, "NEXT_COMIC"
                     else:
@@ -165,7 +167,7 @@ while run:
             if keys[pygame.K_r]:
                 pacifist_timer = pygame.time.get_ticks()
             if pygame.time.get_ticks() - pacifist_timer > 10000 and not is_fading:
-                comic_index = 3
+                comic_index = 5
                 is_fading, next_state = True, "TRANSITION_L1_L2"
 
         for f in [fighter_1, fighter_2]:
@@ -176,13 +178,13 @@ while run:
             is_fading, next_state = True, "LOST_SCREEN"
         
         if current_level == 2 and fighter_2.health <= 0 and not is_fading:
-            comic_index = 4
+            comic_index = 6
             is_fading, next_state = True, "TRANSITION_L2_L3"
             
     elif level_selection: draw_levels()
     elif in_cutscene: draw_cutscene()
     elif game_over_lost: draw_lost_screen()
-    else: draw_menu("Braw Bizarre", "Pressione qualquer tecla", RED)
+    else: draw_menu("Eclipse Lunar", "Pressione qualquer tecla", RED)
 
     if is_fading:
         fade_alpha += 7
