@@ -14,6 +14,7 @@ RED, YELLOW, WHITE, GREEN, GRAY = (255,0,0), (255,255,0), (255,255,255), (0,255,
 
 bg_image1 = pygame.image.load("assets/images/Background_deserto.jpg").convert_alpha()
 bg_image2 = pygame.image.load("assets/images/background2.png").convert_alpha()
+bg_image3 = pygame.image.load("assets/images/backgroundcaverna.png").convert_alpha()
 
 gore_font = "assets/fonts/gorefont.ttf"
 menu_font = pygame.font.Font(gore_font, 64)
@@ -56,12 +57,18 @@ fighter_1 = Fighter(200, 380, is_ai=False)
 fighter_2 = Fighter(700, 380, is_ai=True, behavior="passive")
 
 def draw_interface():
-    bg = bg_image2 if current_level == 2 else bg_image1
+    if current_level == 3:
+        bg = bg_image3
+    elif current_level == 2:
+        bg = bg_image2
+    else:
+        bg = bg_image1
+
     scaled_bg = pygame.transform.scale(bg, (SCREEN_WIDTH, SCREEN_HEIGHT))
     screen.blit(scaled_bg, (0, 0))
     draw_health_bar(fighter_1.health, 20, 20)
     draw_health_bar(fighter_2.health, 580, 20)
-
+    
 def draw_health_bar(health, x, y):
     pygame.draw.rect(screen, WHITE, (x - 2, y - 2, 404, 34))
     pygame.draw.rect(screen, RED, (x, y, 400, 30))
