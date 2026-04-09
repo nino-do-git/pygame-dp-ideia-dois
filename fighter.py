@@ -133,7 +133,14 @@ class Fighter():
         if now - self.last_attack_time > 800:
             self.attacking = True
             self.last_attack_time = now
-            att_rect = pygame.Rect(self.rect.centerx - (2 * self.rect.width * self.flip), self.rect.y, 2 * self.rect.width, self.rect.height)
+            
+            attack_img_width = self.attack_anim[0].get_width()
+            
+            if not self.flip:
+                att_rect = pygame.Rect(self.rect.centerx, self.rect.y, attack_img_width // 2, self.rect.height)
+            else:
+                att_rect = pygame.Rect(self.rect.centerx - (attack_img_width // 2), self.rect.y, attack_img_width // 2, self.rect.height)
+                
             if att_rect.colliderect(target.rect):
                 target.health -= 10
 
