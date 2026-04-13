@@ -1,17 +1,5 @@
-import os
 import pygame
 import random
-
-def find_asset(filename):
-    if not os.path.exists("assets"): return filename
-    target_name = filename.split('/')[-1].rsplit('.', 1)[0].replace('ã', 'a').lower()
-    for root, _, files in os.walk("assets"):
-        for f in files:
-            if '.' in f:
-                f_name = f.rsplit('.', 1)[0].replace('ã', 'a').lower()
-                if f_name == target_name:
-                    return os.path.join(root, f)
-    return filename
 
 class Fighter():
     def __init__(self, x, y, is_ai=False, behavior="passive", character=None):
@@ -32,23 +20,42 @@ class Fighter():
     def load_assets(self):
         S = 1.4
         if self.character == "astronaut":
-            self.idle = [self.load_img("idlefuturista.png", S * 0.35)]
-            self.walk = [self.load_img(f"walk{i}futurista.png", S) for i in range(1, 4)]
-            self.attack_anim = [self.load_img(f"attack{i}futurista.png", S) for i in range(1, 4)]
-            self.death = [self.load_img(f"die{i}futurista.png", S) for i in range(1, 4)]
+            self.idle = [self.load_img("assets/images/astronauta/idlefuturista.png", S * 0.35)]
+            self.walk = [self.load_img(f"assets/images/astronauta/walk{i}futurista.png", S) for i in range(1, 4)]
+            self.attack_anim = [self.load_img(f"assets/images/astronauta/attack{i}futurista.png", S) for i in range(1, 4)]
+            self.death = [self.load_img(f"assets/images/astronauta/die{i}futurista.png", S) for i in range(1, 4)]
         elif self.character == "et":
-            self.idle = [self.load_img("idleET.png", S * 0.75)]
-            self.walk = [self.load_img(f"walk{i}ET.png", S) for i in range(1, 4)]
-            self.attack_anim = [self.load_img(f"attack{i}ET.png", S) for i in range(1, 4)]
-            self.death = [self.load_img("die1ET.png", S * 0.20), self.load_img("di2ET.png", S * 0.20)]
+            self.idle = [self.load_img("assets/images/et/idleET.png", S * 0.75)]
+            self.walk = [self.load_img(f"assets/images/et/walk{i}ET.png", S) for i in range(1, 4)]
+            self.attack_anim = [self.load_img(f"assets/images/et/attack{i}ET.png", S) for i in range(1, 4)]
+            self.death = [self.load_img("assets/images/et/die1ET.png", S * 0.20), self.load_img("assets/images/et/di2ET.png", S * 0.20)]
 
-    def load_img(self, filename, scale):
-        try:
-            img = pygame.image.load(find_asset(filename)).convert_alpha()
-        except:
+    def load_img(self, filepath, scale):
+        # Adicionei a pasta gnomopaiemae exata do seu print para buscar automático
+        paths = [filepath, filepath.replace('ã', 'a')]
+        if "/" not in filepath:
+            base = filepath
+            paths.extend([
+                f"assets/images/{base}",
+                f"assets/images/gnomopaiemae/{base}",
+                f"assets/images/et/{base}",
+                f"assets/images/astronauta/{base}",
+                f"assets/images/vampiro/{base}"
+            ])
+            paths.extend([p.replace('ã', 'a') for p in paths])
+            
+        img = None
+        for p in paths:
+            try:
+                img = pygame.image.load(p).convert_alpha()
+                break
+            except:
+                pass
+        
+        if not img:
+            print(f"AVISO: Imagem '{filepath}' não encontrada na pasta!")
             img = pygame.Surface((50, 50))
-            img.fill((255, 0, 0))
-            print(f"ERRO: Imagem '{filename}' não encontrada na pasta!")
+            img.fill((255, 0, 255)) # Quadrado Rosa/Magenta para alertar erro
             
         w = int(img.get_width() * scale)
         h = int(img.get_height() * scale)
@@ -165,4 +172,4 @@ class BossGnomo(Fighter):
         if self.frame_index >= len(self.current_animation):
             if self.health <= 0: self.frame_index = len(self.current_animation) - 1
             else: self.frame_index, self.attacking = 0, False
-        self.image = self.current_animation[self.frame_index] 
+        self.image = self.current_animation[self.frame_index]

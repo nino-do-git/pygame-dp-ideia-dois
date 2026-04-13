@@ -11,11 +11,11 @@ class Vampire(Fighter):
 
     def load_assets(self):
         VS, VPS = 1.4 * 1.05, 1.4 * 0.7 
-        self.idle = [self.load_img("idlevamp.png", VS)]
-        self.walk = [self.load_img(f"walk{i}vamp.png", VS) for i in range(1, 4)]
-        self.attack_anim = [self.load_img(f"attack{i}vamp.png", VS) for i in range(1, 3)]
-        self.death = [self.load_img(f"die{i}vamp.png", VS) for i in range(1, 3)]
-        self.eject_img = self.load_img("ejectvamp.png", VPS)
+        self.idle = [self.load_img("assets/images/vampiro/idlevamp.png", VS)]
+        self.walk = [self.load_img(f"assets/images/vampiro/walk{i}vamp.png", VS) for i in range(1, 4)]
+        self.attack_anim = [self.load_img(f"assets/images/vampiro/attack{i}vamp.png", VS) for i in range(1, 3)]
+        self.death = [self.load_img(f"assets/images/vampiro/die{i}vamp.png", VS) for i in range(1, 3)]
+        self.eject_img = self.load_img("assets/images/vampiro/ejectvamp.png", VPS)
 
     def ai_logic(self, sw, sh, target):
         SPEED, dx, now = 3, 0, pygame.time.get_ticks()

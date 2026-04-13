@@ -12,62 +12,58 @@ pygame.display.set_caption("Eclipse Lunar")
 clock = pygame.time.Clock()
 FPS = 60
 
-RED, YELLOW, WHITE, GREEN, GRAY, BLACK = (255,0,0), (255,255,0), (255,255,255), (0,255,150), (50,50,50), (20,20,20)
+RED, YELLOW, WHITE, GREEN, GRAY, BLACK, MAGENTA = (255,0,0), (255,255,0), (255,255,255), (0,255,150), (50,50,50), (20,20,20), (255,0,255)
 
-def find_asset(filename):
-    if not os.path.exists("assets"): return filename
-    target_name = filename.split('/')[-1].rsplit('.', 1)[0].replace('ã', 'a').lower()
-    for root, _, files in os.walk("assets"):
-        for f in files:
-            if '.' in f:
-                f_name = f.rsplit('.', 1)[0].replace('ã', 'a').lower()
-                if f_name == target_name:
-                    return os.path.join(root, f)
-    return filename
+def load_safe(filepath, width=SCREEN_WIDTH, height=SCREEN_HEIGHT):
+    try:
+        return pygame.image.load(filepath).convert_alpha()
+    except:
+        print(f"AVISO: Imagem '{filepath}' não encontrada na pasta!")
+        surface = pygame.Surface((width, height))
+        surface.fill(MAGENTA)
+        return surface
 
-def load_safe(filename):
-    return pygame.image.load(find_asset(filename)).convert_alpha()
-
-bg_image1 = pygame.transform.scale(load_safe("Background_deserto.jpg"), (SCREEN_WIDTH, SCREEN_HEIGHT))
-bg_image2 = pygame.transform.scale(load_safe("background2.png"), (SCREEN_WIDTH, SCREEN_HEIGHT))
-bg_image3 = pygame.transform.scale(load_safe("backgroundcaverna.png"), (SCREEN_WIDTH, SCREEN_HEIGHT))
+bg_image1 = pygame.transform.scale(load_safe("assets/images/Background_deserto.jpg"), (SCREEN_WIDTH, SCREEN_HEIGHT))
+bg_image2 = pygame.transform.scale(load_safe("assets/images/background2.png"), (SCREEN_WIDTH, SCREEN_HEIGHT))
+bg_image3 = pygame.transform.scale(load_safe("assets/images/backgroundcaverna.png"), (SCREEN_WIDTH, SCREEN_HEIGHT))
 
 try:
-    menu_font = pygame.font.Font(find_asset("gorefont.ttf"), 64)
-    level_font = pygame.font.Font(find_asset("gorefont.ttf"), 100)
-    msg_font = pygame.font.Font(find_asset("gorefont.ttf"), 30)
+    menu_font = pygame.font.Font("assets/fonts/gorefont.ttf", 64)
+    level_font = pygame.font.Font("assets/fonts/gorefont.ttf", 100)
+    msg_font = pygame.font.Font("assets/fonts/gorefont.ttf", 30)
 except:
     menu_font = pygame.font.SysFont(None, 64)
     level_font = pygame.font.SysFont(None, 100)
     msg_font = pygame.font.SysFont(None, 30)
 
 try:
-    go_font = pygame.font.Font(find_asset("game_over.ttf"), 150)
-    go_msg_font = pygame.font.Font(find_asset("game_over.ttf"), 80)
+    go_font = pygame.font.Font("assets/fonts/game_over.ttf", 150)
+    go_msg_font = pygame.font.Font("assets/fonts/game_over.ttf", 80)
 except:
     go_font = pygame.font.SysFont(None, 150)
     go_msg_font = pygame.font.SysFont(None, 80)
 
 try:
-    t_font = pygame.font.Font(find_asset("digital-7.ttf"), 50)
+    t_font = pygame.font.Font("assets/fonts/digital-7.ttf", 50)
 except:
     t_font = pygame.font.SysFont(None, 50)
 
 menu_subfont = pygame.font.SysFont(None, 36)
 
 def scale_aspect(img):
+    if img.get_width() == 0 or img.get_height() == 0: return img
     scale = min(SCREEN_WIDTH / img.get_width(), SCREEN_HEIGHT / img.get_height())
     return pygame.transform.scale(img, (int(img.get_width() * scale), int(img.get_height() * scale)))
 
-c0 = scale_aspect(load_safe("Quadrinhoinicial.png"))
-c1 = scale_aspect(load_safe("Quadrinho1.1.png"))
-c2 = scale_aspect(load_safe("Quadrinho1.2.png"))
-c3 = scale_aspect(load_safe("Quadrinho1.3.png"))
-c4 = scale_aspect(load_safe("Quadrinho1.4.png"))
-c5 = scale_aspect(load_safe("Quadrinho2.1.png"))
-c6 = scale_aspect(load_safe("Quadrinho3.1.png"))
-c7 = scale_aspect(load_safe("Quadrinhonivel3.2.png"))
-c8 = scale_aspect(load_safe("Quadrinho3.3.png"))
+c0 = scale_aspect(load_safe("assets/images/quadrinhos/Quadrinhoinicial.png"))
+c1 = scale_aspect(load_safe("assets/images/quadrinhos/Quadrinho1.1.png"))
+c2 = scale_aspect(load_safe("assets/images/quadrinhos/Quadrinho1.2.png"))
+c3 = scale_aspect(load_safe("assets/images/quadrinhos/Quadrinho1.3.png"))
+c4 = scale_aspect(load_safe("assets/images/quadrinhos/Quadrinho1.4.png"))
+c5 = scale_aspect(load_safe("assets/images/quadrinhos/Quadrinho2.1.png"))
+c6 = scale_aspect(load_safe("assets/images/quadrinhos/Quadrinho3.1.png"))
+c7 = scale_aspect(load_safe("assets/images/quadrinhos/Quadrinhonivel3.2.png"))
+c8 = scale_aspect(load_safe("assets/images/quadrinhos/Quadrinho3.3.png"))
 
 comics = [c0, c1, c2, c3, c4, c5, c6, c7, c8]
 
@@ -80,6 +76,11 @@ fade_surface.fill((0,0,0))
 current_level = 1
 comic_index = 0
 pacifist_timer = 0
+
+boss_phase_2 = False
+in_boss_transition = False
+transition_start_time = 0
+final_zoom_surface = None
 
 level_rects = [
     pygame.Rect(150, 150, 200, 150),
@@ -157,6 +158,8 @@ while run:
                         if rect.collidepoint(event.pos):
                             current_level = i
                             fighter_1 = Fighter(200, 380, is_ai=False)
+                            boss_phase_2 = False
+                            in_boss_transition = False
                             if current_level == 1:
                                 fighter_2 = Fighter(700, 380, is_ai=True, behavior="passive")
                                 pacifist_broken = False
@@ -181,38 +184,82 @@ while run:
                 if event.type == pygame.MOUSEBUTTONDOWN: is_fading, next_state = True, "LEVEL_SELECT"
 
     if game_started:
-        draw_interface()
-        fighter_1.move(SCREEN_WIDTH, SCREEN_HEIGHT, fighter_2)
-        fighter_2.ai_logic(SCREEN_WIDTH, SCREEN_HEIGHT, fighter_1)
-        if current_level == 1:
-            if fighter_2.health < fighter_2.max_health:
-                pacifist_broken = True
-                fighter_2.behavior = "bully"
-            if not pacifist_broken:
-                p_time = pygame.time.get_ticks() - pacifist_timer
-                if p_time > 3000:
-                    rem_ms = 13000 - p_time
-                    if rem_ms > 0:
-                        bw, bh = 400, 12
-                        fw = (rem_ms / 10000) * bw
-                        color = GREEN if rem_ms > 4000 else YELLOW
-                        if rem_ms < 2000: color = RED
-                        pygame.draw.rect(screen, WHITE, (SCREEN_WIDTH//2 - bw//2 - 2, 88, bw + 4, bh + 4), border_radius=10)
-                        pygame.draw.rect(screen, BLACK, (SCREEN_WIDTH//2 - bw//2, 90, bw, bh), border_radius=10)
-                        pygame.draw.rect(screen, color, (SCREEN_WIDTH//2 - bw//2, 90, fw, bh), border_radius=10)
-                        txt = t_font.render(str(int(rem_ms // 1000) + 1), True, WHITE)
-                        screen.blit(txt, (SCREEN_WIDTH//2 - txt.get_width()//2, 40))
-                if p_time >= 13000 and not is_fading:
-                    comic_index = 5
-                    is_fading, next_state = True, "TRANSITION_L1_L2"
-        for f in [fighter_1, fighter_2]:
-            f.update()
-            f.draw(screen)
-        if fighter_1.health <= 0 or (current_level == 1 and fighter_2.health <= 0) and not is_fading:
-            is_fading, next_state = True, "LOST_SCREEN"
-        if current_level == 2 and fighter_2.health <= 0 and not is_fading:
-            comic_index = 6
-            is_fading, next_state = True, "TRANSITION_L2_L3"
+        if current_level == 3 and fighter_2.health <= fighter_2.max_health / 2 and not boss_phase_2:
+            boss_phase_2 = True
+            in_boss_transition = True
+            transition_start_time = pygame.time.get_ticks()
+            
+            screen.blit(bg_image3, (0, 0))
+            for f in [fighter_1, fighter_2]:
+                f.draw(screen)
+            snap = screen.copy()
+            
+            zoom = 1.7
+            zoomed = pygame.transform.scale(snap, (int(SCREEN_WIDTH * zoom), int(SCREEN_HEIGHT * zoom)))
+            bx, by = fighter_2.rect.center
+            offset_x = (SCREEN_WIDTH // 2) - int(bx * zoom)
+            offset_y = (SCREEN_HEIGHT // 2) - int(by * zoom)
+            
+            final_zoom_surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+            final_zoom_surface.blit(zoomed, (offset_x, offset_y))
+
+        if not in_boss_transition:
+            draw_interface()
+            fighter_1.move(SCREEN_WIDTH, SCREEN_HEIGHT, fighter_2)
+            fighter_2.ai_logic(SCREEN_WIDTH, SCREEN_HEIGHT, fighter_1)
+            
+            if current_level == 1:
+                if fighter_2.health < fighter_2.max_health:
+                    pacifist_broken = True
+                    fighter_2.behavior = "bully"
+                if not pacifist_broken:
+                    p_time = pygame.time.get_ticks() - pacifist_timer
+                    if p_time > 3000:
+                        rem_ms = 13000 - p_time
+                        if rem_ms > 0:
+                            bw, bh = 400, 12
+                            fw = (rem_ms / 10000) * bw
+                            color = GREEN if rem_ms > 4000 else YELLOW
+                            if rem_ms < 2000: color = RED
+                            pygame.draw.rect(screen, WHITE, (SCREEN_WIDTH//2 - bw//2 - 2, 88, bw + 4, bh + 4), border_radius=10)
+                            pygame.draw.rect(screen, BLACK, (SCREEN_WIDTH//2 - bw//2, 90, bw, bh), border_radius=10)
+                            pygame.draw.rect(screen, color, (SCREEN_WIDTH//2 - bw//2, 90, fw, bh), border_radius=10)
+                            txt = t_font.render(str(int(rem_ms // 1000) + 1), True, WHITE)
+                            screen.blit(txt, (SCREEN_WIDTH//2 - txt.get_width()//2, 40))
+                    if p_time >= 13000 and not is_fading:
+                        comic_index = 5
+                        is_fading, next_state = True, "TRANSITION_L1_L2"
+                        
+            for f in [fighter_1, fighter_2]:
+                f.update()
+                f.draw(screen)
+                
+            if fighter_1.health <= 0 or (current_level == 1 and fighter_2.health <= 0) and not is_fading:
+                is_fading, next_state = True, "LOST_SCREEN"
+            if current_level == 2 and fighter_2.health <= 0 and not is_fading:
+                comic_index = 6
+                is_fading, next_state = True, "TRANSITION_L2_L3"
+                
+        else:
+            draw_interface()
+            for f in [fighter_1, fighter_2]:
+                f.draw(screen)
+                
+            t = pygame.time.get_ticks() - transition_start_time
+            if t < 1000:
+                alpha = int((t / 1000) * 255)
+            elif t < 3000:
+                alpha = 255
+            else:
+                alpha = max(0, 255 - int(((t - 3000) / 1000) * 255))
+                
+            if final_zoom_surface:
+                final_zoom_surface.set_alpha(alpha)
+                screen.blit(final_zoom_surface, (0, 0))
+            
+            if t >= 4000:
+                in_boss_transition = False
+
     elif level_selection: draw_levels()
     elif in_cutscene: draw_cutscene()
     elif game_over_lost: draw_lost_screen()
