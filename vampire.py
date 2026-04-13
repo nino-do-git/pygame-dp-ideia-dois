@@ -6,16 +6,16 @@ from projectile import Projectile
 class Vampire(Fighter):
     def __init__(self, x, y, behavior="bully"):
         super().__init__(x, y, behavior=behavior)
+        self.max_health = 50
         self.health, self.projectiles = 50, []
 
     def load_assets(self):
-        SCALE, path = 1.4, "assets/images/vampiro"
-        VS, VPS = SCALE * 1.05, SCALE * 0.7 
-        self.idle = [self.load_img(f"{path}/idlevamp.png", VS)]
-        self.walk = [self.load_img(f"{path}/walk{i}vamp.png", VS) for i in range(1, 4)]
-        self.attack_anim = [self.load_img(f"{path}/attack{i}vamp.png", VS) for i in range(1, 3)]
-        self.death = [self.load_img(f"{path}/die{i}vamp.png", VS) for i in range(1, 3)]
-        self.eject_img = self.load_img(f"{path}/ejectvamp.png", VPS)
+        VS, VPS = 1.4 * 1.05, 1.4 * 0.7 
+        self.idle = [self.load_img("idlevamp.png", VS)]
+        self.walk = [self.load_img(f"walk{i}vamp.png", VS) for i in range(1, 4)]
+        self.attack_anim = [self.load_img(f"attack{i}vamp.png", VS) for i in range(1, 3)]
+        self.death = [self.load_img(f"die{i}vamp.png", VS) for i in range(1, 3)]
+        self.eject_img = self.load_img("ejectvamp.png", VPS)
 
     def ai_logic(self, sw, sh, target):
         SPEED, dx, now = 3, 0, pygame.time.get_ticks()

@@ -1,61 +1,65 @@
+import os
 import pygame
 import random
 
+def find_asset(filename):
+    if not os.path.exists("assets"): return filename
+    target_name = filename.split('/')[-1].rsplit('.', 1)[0].replace('ã', 'a').lower()
+    for root, _, files in os.walk("assets"):
+        for f in files:
+            if '.' in f:
+                f_name = f.rsplit('.', 1)[0].replace('ã', 'a').lower()
+                if f_name == target_name:
+                    return os.path.join(root, f)
+    return filename
+
 class Fighter():
     def __init__(self, x, y, is_ai=False, behavior="passive", character=None):
-        self.is_ai = is_ai
-        self.flip = False
+        self.is_ai, self.flip = is_ai, False
         self.character = character if character else ("et" if is_ai else "astronaut")
         self.rect = pygame.Rect((x, y, 40, 80))
-        self.vel_y = 0
-        self.jump = False
-        self.attacking = False
-        self.health = 100
-        self.last_health = 100
-        self.last_attack_time = 0
-        self.frame_index = 0
+        self.vel_y, self.jump, self.attacking = 0, False, False
+        self.max_health = 100
+        self.health, self.last_health = 100, 100
+        self.last_attack_time, self.frame_index = 0, 0
         self.update_time = pygame.time.get_ticks()
         self.load_assets()
         self.current_animation = self.idle
         self.image = self.current_animation[self.frame_index]
-        self.ai_direction = 0
-        self.last_ai_decision = 0
-        self.behavior = behavior
-        self.aggro = False if behavior == "passive" else True
+        self.ai_direction, self.last_ai_decision = 0, 0
+        self.behavior, self.aggro = behavior, False if behavior == "passive" else True
 
     def load_assets(self):
-        SCALE = 1.4
+        S = 1.4
         if self.character == "astronaut":
-            path = "assets/images/astronauta"
-            self.idle = [self.load_img(f"{path}/idlefuturista.png", SCALE * 0.35)]
-            self.walk = [self.load_img(f"{path}/walk{i}futurista.png", SCALE) for i in range(1, 4)]
-            self.attack_anim = [self.load_img(f"{path}/attack{i}futurista.png", SCALE) for i in range(1, 4)]
-            self.death = [self.load_img(f"{path}/die{i}futurista.png", SCALE) for i in range(1, 4)]
+            self.idle = [self.load_img("idlefuturista.png", S * 0.35)]
+            self.walk = [self.load_img(f"walk{i}futurista.png", S) for i in range(1, 4)]
+            self.attack_anim = [self.load_img(f"attack{i}futurista.png", S) for i in range(1, 4)]
+            self.death = [self.load_img(f"die{i}futurista.png", S) for i in range(1, 4)]
         elif self.character == "et":
-            path = "assets/images/et"
-            self.idle = [self.load_img(f"{path}/idlegnomo.png", SCALE * 0.756)]
-            self.walk = [self.load_img(f"{path}/walk{i}ET.png", SCALE) for i in range(1, 4)]
-            self.attack_anim = [self.load_img(f"{path}/attack{i}ET.png", SCALE) for i in range(1, 4)]
-            self.death = [self.load_img(f"{path}/idlegnomo.png", SCALE * 0.756)]
+            self.idle = [self.load_img("idleET.png", S * 0.75)]
+            self.walk = [self.load_img(f"walk{i}ET.png", S) for i in range(1, 4)]
+            self.attack_anim = [self.load_img(f"attack{i}ET.png", S) for i in range(1, 4)]
+            self.death = [self.load_img("die1ET.png", S * 0.20), self.load_img("di2ET.png", S * 0.20)]
 
-    def load_img(self, path, scale):
+    def load_img(self, filename, scale):
         try:
-            img = pygame.image.load(path).convert_alpha()
+            img = pygame.image.load(find_asset(filename)).convert_alpha()
         except:
-            img = pygame.Surface((100, 100))
-            img.fill((255, 0, 255))
+            img = pygame.Surface((50, 50))
+            img.fill((255, 0, 0))
+            print(f"ERRO: Imagem '{filename}' não encontrada na pasta!")
+            
         w = int(img.get_width() * scale)
         h = int(img.get_height() * scale)
         return pygame.transform.scale(img, (w, h))
 
     def apply_physics(self, dx, sw, sh):
-        GRAVITY = 2
-        self.vel_y += GRAVITY
+        self.vel_y += 2
         dy = self.vel_y
         if self.rect.left + dx < 0: dx = -self.rect.left
         if self.rect.right + dx > sw: dx = sw - self.rect.right
-        if self.rect.bottom + dy > sh - 90:
-            self.vel_y, self.jump, dy = 0, False, sh - 90 - self.rect.bottom
+        if self.rect.bottom + dy > sh - 90: self.vel_y, self.jump, dy = 0, False, sh - 90 - self.rect.bottom
         self.rect.x += dx
         self.rect.y += dy
         self.update_animation_state(dx)
@@ -82,13 +86,12 @@ class Fighter():
                 dx = self.ai_direction
                 if random.randint(1, 100) <= 2 and not self.jump: self.vel_y, self.jump = -30, True
             elif self.behavior == "bully":
-                if target.health > 20 or self.character == "astronaut":
-                    if now - self.last_ai_decision > 400:
-                        self.last_ai_decision, self.ai_direction = now, -SPEED if target.rect.centerx < self.rect.centerx else SPEED
-                        self.flip = target.rect.centerx < self.rect.centerx
-                    dx = self.ai_direction
-                    if random.randint(1, 100) <= 6 and not self.jump: self.vel_y, self.jump = -30, True
-                    if abs(self.rect.centerx - target.rect.centerx) < 150: self.attack(target)
+                if now - self.last_ai_decision > 400:
+                    self.last_ai_decision, self.ai_direction = now, -SPEED if target.rect.centerx < self.rect.centerx else SPEED
+                    self.flip = target.rect.centerx < self.rect.centerx
+                dx = self.ai_direction
+                if random.randint(1, 100) <= 6 and not self.jump: self.vel_y, self.jump = -30, True
+                if abs(self.rect.centerx - target.rect.centerx) < 150: self.attack(target)
         self.apply_physics(dx, sw, sh)
 
     def update_animation_state(self, dx):
@@ -105,12 +108,10 @@ class Fighter():
         now = pygame.time.get_ticks()
         if now - self.last_attack_time > 800:
             self.attacking, self.last_attack_time = True, now
-            attack_img_width = self.attack_anim[0].get_width()
-            if not self.flip: att_rect = pygame.Rect(self.rect.centerx, self.rect.y, attack_img_width // 2, self.rect.height)
-            else: att_rect = pygame.Rect(self.rect.centerx - (attack_img_width // 2), self.rect.y, attack_img_width // 2, self.rect.height)
+            W = self.attack_anim[0].get_width()
+            att_rect = pygame.Rect(self.rect.centerx if not self.flip else self.rect.centerx - W//2, self.rect.y, W//2, self.rect.height)
             if att_rect.colliderect(target.rect):
-                damage = 100 if (self.is_ai and self.behavior == "bully" and self.character == "astronaut" and (self.health <= 20 or target.health <= 20)) else 10
-                target.health -= damage
+                target.health -= 10
 
     def update(self):
         if pygame.time.get_ticks() - self.update_time > 120:
@@ -128,59 +129,40 @@ class Fighter():
 class BossGnomo(Fighter):
     def __init__(self, x, y):
         super().__init__(x, y, is_ai=True, behavior="bully")
-        self.health, self.state = 100, 'mae'
+        self.max_health = 100
+        self.health = 100
 
     def load_assets(self):
-        S, path = 1.6, "assets/images/gnomopaiem"
-        alt_path = "assets/images/et"
-        self.idle_mae = [self.load_img(f"{path}/idlegnomomae.png", S)]
-        self.walk_mae = [self.load_img(f"{path}/walk1gnomomae.png", S), self.load_img(f"{path}/walk2gnomomae.png", S)]
-        self.attack_mae = [self.load_img(f"{path}/attack1gnomomae.png", S), self.load_img(f"{path}/attack2gnomomae.png", S)]
-        self.transform_anim = [self.load_img(f"{path}/tansform1gnomo.png", S), self.load_img(f"{path}/transform2gnomo.png", S), self.load_img(f"{path}/transform3gnomo.png", S)]
-        self.idle_pai = [self.load_img(f"{path}/idlegnomopai.png", S)]
-        self.walk_pai = [self.load_img(f"{path}/walk1gnomopai.png", S), self.load_img(f"{path}/walk2gnomopai.png", S)]
-        self.attack_pai = [self.load_img(f"{path}/attack1gnomopai.png", S), self.load_img(f"{path}/attack2gnomopai.png", S)]
-        self.death = self.idle_pai
-        self.idle, self.walk, self.attack_anim = self.idle_mae, self.walk_mae, self.attack_mae
+        S = 1.6
+        idle_img = self.load_img("idlegnomomae.png", S)
+        self.idle = [idle_img]
+        self.walk = [self.load_img("walk1gnomomae.png", S), self.load_img("walk2gnomomae.png", S)]
+        self.attack_anim = [self.load_img("attack1gnomomae.png", S), self.load_img("attack2gnomomae.png", S)]
+        self.death = [pygame.transform.rotate(idle_img, -90)]
 
     def ai_logic(self, sw, sh, target):
-        if self.health <= 0 or self.state == 'transforming': return
-        if self.state == 'mae' and self.health <= 50:
-            self.state, self.frame_index, self.current_animation = 'transforming', 0, self.transform_anim
-            return
-        speed, now = 5 if self.state == 'pai' else 3, pygame.time.get_ticks()
+        if self.health <= 0: return
+        SPEED, now = 4, pygame.time.get_ticks()
         if now - self.last_ai_decision > 400:
             self.last_ai_decision = now
-            self.ai_direction, self.flip = -speed if target.rect.centerx < self.rect.centerx else speed, target.rect.centerx < self.rect.centerx
+            self.ai_direction, self.flip = -SPEED if target.rect.centerx < self.rect.centerx else SPEED, target.rect.centerx < self.rect.centerx
         dx = self.ai_direction
-        if self.state == 'pai' and random.randint(1, 100) <= 5 and not self.jump: self.vel_y, self.jump = -30, True
-        if abs(self.rect.centerx - target.rect.centerx) < 100: self.attack(target)
+        if random.randint(1, 100) <= 5 and not self.jump: self.vel_y, self.jump = -30, True
+        if abs(self.rect.centerx - target.rect.centerx) < 120: self.attack(target)
         self.apply_physics(dx, sw, sh)
 
     def update_animation_state(self, dx):
-        if self.state == 'transforming': return
-        if self.state == 'mae':
-            if self.attacking: self.current_animation = self.attack_mae
-            elif dx != 0: self.current_animation = self.walk_mae
-            else: self.current_animation = self.idle_mae
-        else:
-            if self.attacking: self.current_animation = self.attack_pai
-            elif dx != 0: self.current_animation = self.walk_pai
-            else: self.current_animation = self.idle_pai
-
-    def attack(self, target):
-        now = pygame.time.get_ticks()
-        cooldown = 400 if self.state == 'pai' else 800
-        if now - self.last_attack_time > cooldown:
-            self.attacking, self.last_attack_time = True, now
-            if self.rect.inflate(80, 0).colliderect(target.rect):
-                target.health -= 15 if self.state == 'pai' else 10
+        if self.health <= 0:
+            if self.current_animation != self.death: self.current_animation, self.frame_index = self.death, 0
+        elif self.attacking: self.current_animation = self.attack_anim
+        elif dx != 0: self.current_animation = self.walk
+        else: self.current_animation = self.idle
 
     def update(self):
         if pygame.time.get_ticks() - self.update_time > 150:
             self.frame_index += 1
             self.update_time = pygame.time.get_ticks()
         if self.frame_index >= len(self.current_animation):
-            if self.state == 'transforming': self.state, self.frame_index = 'pai', 0
+            if self.health <= 0: self.frame_index = len(self.current_animation) - 1
             else: self.frame_index, self.attacking = 0, False
-        self.image = self.current_animation[self.frame_index]
+        self.image = self.current_animation[self.frame_index] 
