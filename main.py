@@ -1,6 +1,7 @@
 import os
 import pygame
-from fighter import Fighter, BossGnomo
+from fighter import Fighter
+from bossgnomo import BossGnomo
 from vampire import Vampire
 
 pygame.init()
@@ -29,7 +30,6 @@ def load_safe(filepath, width=SCREEN_WIDTH, height=SCREEN_HEIGHT):
     try:
         return pygame.image.load(filepath).convert_alpha()
     except:
-        print(f"AVISO: Imagem '{filepath}' não encontrada na pasta!")
         surface = pygame.Surface((width, height))
         surface.fill(MAGENTA)
         return surface

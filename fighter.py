@@ -1,5 +1,17 @@
+import os
 import pygame
 import random
+
+def find_asset(filename):
+    if not os.path.exists("assets"): return filename
+    target_name = filename.split('/')[-1].rsplit('.', 1)[0].replace('ã', 'a').lower()
+    for root, _, files in os.walk("assets"):
+        for f in files:
+            if '.' in f:
+                f_name = f.rsplit('.', 1)[0].replace('ã', 'a').lower()
+                if f_name == target_name:
+                    return os.path.join(root, f)
+    return filename
 
 class Fighter():
     def __init__(self, x, y, is_ai=False, behavior="passive", character=None):
@@ -31,7 +43,6 @@ class Fighter():
             self.death = [self.load_img("assets/images/et/die1ET.png", S * 0.20), self.load_img("assets/images/et/di2ET.png", S * 0.20)]
 
     def load_img(self, filepath, scale):
-        # Adicionei a pasta gnomopaiemae exata do seu print para buscar automático
         paths = [filepath, filepath.replace('ã', 'a')]
         if "/" not in filepath:
             base = filepath
@@ -53,9 +64,8 @@ class Fighter():
                 pass
         
         if not img:
-            print(f"AVISO: Imagem '{filepath}' não encontrada na pasta!")
             img = pygame.Surface((50, 50))
-            img.fill((255, 0, 255)) # Quadrado Rosa/Magenta para alertar erro
+            img.fill((255, 0, 255))
             
         w = int(img.get_width() * scale)
         h = int(img.get_height() * scale)
@@ -132,44 +142,3 @@ class Fighter():
     def draw(self, surface):
         img = pygame.transform.flip(self.image, self.flip, False)
         surface.blit(img, (self.rect.centerx - (img.get_width() // 2), self.rect.bottom - img.get_height()))
-
-class BossGnomo(Fighter):
-    def __init__(self, x, y):
-        super().__init__(x, y, is_ai=True, behavior="bully")
-        self.max_health = 100
-        self.health = 100
-
-    def load_assets(self):
-        S = 1.6
-        idle_img = self.load_img("idlegnomomae.png", S)
-        self.idle = [idle_img]
-        self.walk = [self.load_img("walk1gnomomae.png", S), self.load_img("walk2gnomomae.png", S)]
-        self.attack_anim = [self.load_img("attack1gnomomae.png", S), self.load_img("attack2gnomomae.png", S)]
-        self.death = [pygame.transform.rotate(idle_img, -90)]
-
-    def ai_logic(self, sw, sh, target):
-        if self.health <= 0: return
-        SPEED, now = 4, pygame.time.get_ticks()
-        if now - self.last_ai_decision > 400:
-            self.last_ai_decision = now
-            self.ai_direction, self.flip = -SPEED if target.rect.centerx < self.rect.centerx else SPEED, target.rect.centerx < self.rect.centerx
-        dx = self.ai_direction
-        if random.randint(1, 100) <= 5 and not self.jump: self.vel_y, self.jump = -30, True
-        if abs(self.rect.centerx - target.rect.centerx) < 120: self.attack(target)
-        self.apply_physics(dx, sw, sh)
-
-    def update_animation_state(self, dx):
-        if self.health <= 0:
-            if self.current_animation != self.death: self.current_animation, self.frame_index = self.death, 0
-        elif self.attacking: self.current_animation = self.attack_anim
-        elif dx != 0: self.current_animation = self.walk
-        else: self.current_animation = self.idle
-
-    def update(self):
-        if pygame.time.get_ticks() - self.update_time > 150:
-            self.frame_index += 1
-            self.update_time = pygame.time.get_ticks()
-        if self.frame_index >= len(self.current_animation):
-            if self.health <= 0: self.frame_index = len(self.current_animation) - 1
-            else: self.frame_index, self.attacking = 0, False
-        self.image = self.current_animation[self.frame_index]
