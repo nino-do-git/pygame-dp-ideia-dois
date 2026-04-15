@@ -39,23 +39,23 @@ bg_image2 = pygame.transform.scale(load_safe("assets/images/background2.png"), (
 bg_image3 = pygame.transform.scale(load_safe("assets/images/backgroundcaverna.png"), (SCREEN_WIDTH, SCREEN_HEIGHT))
 
 try:
-    menu_font = pygame.font.Font("assets/fonts/gorefont.ttf", 64)
-    level_font = pygame.font.Font("assets/fonts/gorefont.ttf", 100)
-    msg_font = pygame.font.Font("assets/fonts/gorefont.ttf", 30)
+    menu_font = pygame.font.Font(find_asset("Pixel Digivolve.otf"), 64)
+    level_font = pygame.font.Font(find_asset("Pixel Digivolve.otf"), 100)
+    msg_font = pygame.font.Font(find_asset("gorefont.ttf"), 30)
 except:
     menu_font = pygame.font.SysFont(None, 64)
     level_font = pygame.font.SysFont(None, 100)
     msg_font = pygame.font.SysFont(None, 30)
 
 try:
-    go_font = pygame.font.Font("assets/fonts/game_over.ttf", 150)
-    go_msg_font = pygame.font.Font("assets/fonts/game_over.ttf", 80)
+    go_font = pygame.font.Font(find_asset("game_over.ttf"), 150)
+    go_msg_font = pygame.font.Font(find_asset("game_over.ttf"), 80)
 except:
     go_font = pygame.font.SysFont(None, 150)
     go_msg_font = pygame.font.SysFont(None, 80)
 
 try:
-    t_font = pygame.font.Font("assets/fonts/digital-7.ttf", 50)
+    t_font = pygame.font.Font(find_asset("digital-7.ttf"), 50)
 except:
     t_font = pygame.font.SysFont(None, 50)
 
@@ -159,8 +159,17 @@ def draw_cutscene():
 def draw_lost_screen():
     screen.fill((0, 0, 0))
     t1 = go_font.render("PERDEU", True, RED)
-    t2 = go_msg_font.render("Voce foi agressivo demais ou foi derrotado!", True, RED)
+    
+    if current_level == 1:
+        msg = "Voce foi agressivo demais ou foi derrotado!"
+    elif current_level == 2:
+        msg = "O vampiro sugou toda sua energia!"
+    else:
+        msg = "A familia de gnomos te esmagou!"
+        
+    t2 = go_msg_font.render(msg, True, RED)
     p = menu_subfont.render("Clique para voltar ao menu", True, GRAY)
+    
     screen.blit(t1, (SCREEN_WIDTH//2 - t1.get_width()//2, 100))
     screen.blit(t2, t2.get_rect(center=(SCREEN_WIDTH//2, 280)))
     screen.blit(p, (SCREEN_WIDTH//2 - p.get_width()//2, 450))

@@ -26,7 +26,7 @@ class Vampire(Fighter):
                 self.flip = target.rect.centerx < self.rect.centerx
             dx = self.ai_direction
             if random.randint(1, 100) <= 6 and not self.jump: self.vel_y, self.jump = -30, True
-            if target.health > 20 and dist < 500: self.attack(target)
+            if target.health > 0 and dist < 500: self.attack(target)
         self.apply_physics(dx, sw, sh)
 
     def attack(self, target):
