@@ -93,6 +93,9 @@ in_boss_transition = False
 transition_start_time = 0
 base_snap = None
 boss_center = (0, 0)
+transicao_anim = []
+transicao_index = 0
+transicao_timer = 0
 
 level_rects = [
     pygame.Rect(150, 150, 200, 150),
@@ -105,6 +108,23 @@ level_rects = [
 
 fighter_1 = Fighter(200, 380, is_ai=False)
 fighter_2 = Fighter(700, 380, is_ai=True, behavior="passive")
+
+def load_transicao_sprites():
+    global transicao_anim
+    S = 1.0
+    try:
+        t1 = pygame.image.load(find_asset("tansform1gnomo.png")).convert_alpha()
+        t2 = pygame.image.load(find_asset("transform2gnomo.png")).convert_alpha()
+        transicao_anim = [
+            pygame.transform.scale(t1, (int(t1.get_width() * S), int(t1.get_height() * S))),
+            pygame.transform.scale(t2, (int(t2.get_width() * S), int(t2.get_height() * S)))
+        ]
+    except:
+        surface = pygame.Surface((50, 50))
+        surface.fill(MAGENTA)
+        transicao_anim = [surface, surface]
+
+load_transicao_sprites()
 
 def draw_interface():
     if current_level == 3: bg = bg_image3
@@ -200,6 +220,8 @@ while run:
             boss_phase_2 = True
             in_boss_transition = True
             transition_start_time = pygame.time.get_ticks()
+            transicao_index = 0
+            transicao_timer = pygame.time.get_ticks()
             
             screen.blit(bg_image3, (0, 0))
             for f in [fighter_1, fighter_2]:
@@ -246,10 +268,22 @@ while run:
                 
         else:
             draw_interface()
-            for f in [fighter_1, fighter_2]:
-                f.draw(screen)
-                
+            fighter_1.draw(screen)
+            
             t = pygame.time.get_ticks() - transition_start_time
+            
+            if t < 1000:
+                fighter_2.image = fighter_2.idle_mae[0]
+            elif t < 3000:
+                if pygame.time.get_ticks() - transicao_timer > 200:
+                    transicao_index = (transicao_index + 1) % len(transicao_anim)
+                    transicao_timer = pygame.time.get_ticks()
+                fighter_2.image = transicao_anim[transicao_index]
+            else:
+                fighter_2.image = fighter_2.idle_pai[0]
+            
+            fighter_2.draw(screen)
+            
             target_zoom = 1.4
             
             if t < 1000:
@@ -263,7 +297,12 @@ while run:
                 alpha = max(0, 255 - int(((t - 3000) / 1000) * 255))
                 
             if base_snap:
-                zoomed = pygame.transform.scale(base_snap, (int(SCREEN_WIDTH * current_zoom), int(SCREEN_HEIGHT * current_zoom)))
+                screen.blit(bg_image3, (0, 0))
+                fighter_1.draw(screen)
+                fighter_2.draw(screen)
+                snap_atualizado = screen.copy()
+                
+                zoomed = pygame.transform.scale(snap_atualizado, (int(SCREEN_WIDTH * current_zoom), int(SCREEN_HEIGHT * current_zoom)))
                 bx, by = boss_center
                 offset_x = (SCREEN_WIDTH // 2) - int(bx * current_zoom)
                 offset_y = (SCREEN_HEIGHT // 2) - int(by * current_zoom)
@@ -272,10 +311,14 @@ while run:
                 zoom_surface.blit(zoomed, (offset_x, offset_y))
                 zoom_surface.set_alpha(alpha)
                 
+                draw_interface()
+                fighter_1.draw(screen)
+                fighter_2.draw(screen)
                 screen.blit(zoom_surface, (0, 0))
             
             if t >= 4000:
                 in_boss_transition = False
+                fighter_2.image = fighter_2.idle_pai[0]
 
     elif level_selection: draw_levels()
     elif in_cutscene: draw_cutscene()

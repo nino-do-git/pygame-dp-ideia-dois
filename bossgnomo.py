@@ -10,37 +10,39 @@ class BossGnomo(Fighter):
         self.phase = 1
 
     def load_assets(self):
-        S = 0.8
-        self.idle_mae = [self.load_img("idlegnomomae.png", S)]
-        self.walk_mae = [self.load_img("walk1gnomomae.png", S), self.load_img("walk2gnomomae.png", S)]
-        self.attack_mae = [self.load_img("attack1gnomomae.png", S), self.load_img("attack2gnomomae.png", S)]
+        S_MAE = 1.0
+        self.idle_mae = [self.load_img("idlegnomomae.png", S_MAE)]
+        self.walk_mae = [self.load_img("walk1gnomomae.png", S_MAE), self.load_img("walk2gnomomae.png", S_MAE)]
+        self.attack_mae = [self.load_img("attack1gnomomae.png", S_MAE), self.load_img("attack2gnomomae.png", S_MAE)]
 
-        self.idle_pai = [self.load_img("idlegnomopai.png", S)]
-        self.walk_pai = [self.load_img("walk1gnomopai.png", S), self.load_img("walk2gnomopai.png", S)]
-        self.attack_pai = [self.load_img("attack1gnomopai.png", S), self.load_img("attack2gnomopai.png", S)]
+        S_PAI = 0.8
+        self.idle_pai = [self.load_img("idlegnomopai.png", S_PAI)]
+        self.walk_pai = [self.load_img("walk1gnomopai.png", S_PAI), self.load_img("walk2gnomopai.png", S_PAI)]
+        self.attack_pai = [self.load_img("attack1gnomopai.png", S_PAI), self.load_img("attack2gnomopai.png", S_PAI)]
 
-        self.death = [pygame.transform.rotate(self.idle_pai[0], -90)]
+        self.death = [self.load_img("die1gnomopai.png", S_PAI), self.load_img("die2gnomopai.png", S_PAI)]
 
         self.idle = self.idle_mae
         self.walk = self.walk_mae
         self.attack_anim = self.attack_mae
 
     def ai_logic(self, sw, sh, target):
-        if self.health <= 0: return
-        
-        if self.health <= self.max_health / 2 and self.phase == 1:
-            self.phase = 2
-            self.idle = self.idle_pai
-            self.walk = self.walk_pai
-            self.attack_anim = self.attack_pai
+        dx = 0
+        if self.health > 0:
+            if self.health <= self.max_health / 2 and self.phase == 1:
+                self.phase = 2
+                self.idle = self.idle_pai
+                self.walk = self.walk_pai
+                self.attack_anim = self.attack_pai
+                
+            SPEED, now = 4, pygame.time.get_ticks()
+            if now - self.last_ai_decision > 400:
+                self.last_ai_decision = now
+                self.ai_direction, self.flip = -SPEED if target.rect.centerx < self.rect.centerx else SPEED, target.rect.centerx < self.rect.centerx
+            dx = self.ai_direction
+            if random.randint(1, 100) <= 5 and not self.jump: self.vel_y, self.jump = -30, True
+            if abs(self.rect.centerx - target.rect.centerx) < 120: self.attack(target)
             
-        SPEED, now = 4, pygame.time.get_ticks()
-        if now - self.last_ai_decision > 400:
-            self.last_ai_decision = now
-            self.ai_direction, self.flip = -SPEED if target.rect.centerx < self.rect.centerx else SPEED, target.rect.centerx < self.rect.centerx
-        dx = self.ai_direction
-        if random.randint(1, 100) <= 5 and not self.jump: self.vel_y, self.jump = -30, True
-        if abs(self.rect.centerx - target.rect.centerx) < 120: self.attack(target)
         self.apply_physics(dx, sw, sh)
 
     def update_animation_state(self, dx):
