@@ -41,10 +41,12 @@ bg_image3 = pygame.transform.scale(load_safe("assets/images/backgroundcaverna.pn
 try:
     menu_font = pygame.font.Font(find_asset("Pixel Digivolve.otf"), 64)
     level_font = pygame.font.Font(find_asset("Pixel Digivolve.otf"), 100)
+    button_font = pygame.font.Font(find_asset("Pixel Digivolve.otf"), 30)
     msg_font = pygame.font.Font(find_asset("gorefont.ttf"), 30)
 except:
     menu_font = pygame.font.SysFont(None, 64)
     level_font = pygame.font.SysFont(None, 100)
+    button_font = pygame.font.SysFont(None, 30)
     msg_font = pygame.font.SysFont(None, 30)
 
 try:
@@ -60,6 +62,16 @@ except:
     t_font = pygame.font.SysFont(None, 50)
 
 menu_subfont = pygame.font.SysFont(None, 36)
+
+txt_jogar = button_font.render("JOGAR", True, WHITE)
+play_button_center_rect = pygame.Rect(SCREEN_WIDTH//2 - txt_jogar.get_width()//2 - 15, SCREEN_HEIGHT - 70, txt_jogar.get_width() + 30, txt_jogar.get_height() + 10)
+play_button_right_rect = pygame.Rect(SCREEN_WIDTH - txt_jogar.get_width() - 30, SCREEN_HEIGHT - 70, txt_jogar.get_width() + 20, txt_jogar.get_height() + 10)
+
+txt_proxima = button_font.render("PROXIMA", True, WHITE)
+next_button_rect = pygame.Rect(SCREEN_WIDTH - txt_proxima.get_width() - 30, SCREEN_HEIGHT - 70, txt_proxima.get_width() + 20, txt_proxima.get_height() + 10)
+
+txt_voltar = button_font.render("VOLTAR", True, WHITE)
+back_button_rect = pygame.Rect(10, SCREEN_HEIGHT - 70, txt_voltar.get_width() + 20, txt_voltar.get_height() + 10)
 
 def scale_aspect(img):
     if img.get_width() == 0 or img.get_height() == 0: return img
@@ -144,8 +156,12 @@ def draw_levels():
     screen.fill((20,20,20))
     t = menu_font.render("SELECIONE O NIVEL", True, WHITE)
     screen.blit(t, (SCREEN_WIDTH//2 - t.get_width()//2, 50))
+    mouse_pos = pygame.mouse.get_pos()
+    
     for i, rect in enumerate(level_rects, 1):
-        pygame.draw.rect(screen, GREEN, rect, 2, border_radius=10)
+        color = GREEN if rect.collidepoint(mouse_pos) else GRAY
+        pygame.draw.rect(screen, color, rect, border_radius=10)
+        pygame.draw.rect(screen, WHITE, rect, 3, border_radius=10)
         txt = level_font.render(str(i), True, WHITE)
         screen.blit(txt, (rect.centerx - txt.get_width()//2, rect.centery - txt.get_height()//2))
 
@@ -155,6 +171,45 @@ def draw_cutscene():
     x = (SCREEN_WIDTH - img.get_width()) // 2
     y = (SCREEN_HEIGHT - img.get_height()) // 2
     screen.blit(img, (x, y))
+    
+    mouse_pos = pygame.mouse.get_pos()
+    
+    max_c = 5
+    if current_level == 2: max_c = 6
+    elif current_level == 3: max_c = 9
+    
+    is_last_comic = (comic_index != 0 and comic_index == max_c - 1)
+    
+    if comic_index == 0:
+        color = GREEN if play_button_center_rect.collidepoint(mouse_pos) else GRAY
+        pygame.draw.rect(screen, color, play_button_center_rect, border_radius=5)
+        pygame.draw.rect(screen, WHITE, play_button_center_rect, 2, border_radius=5)
+        txt = button_font.render("JOGAR", True, WHITE)
+        screen.blit(txt, (play_button_center_rect.centerx - txt.get_width()//2, play_button_center_rect.centery - txt.get_height()//2))
+    elif is_last_comic:
+        color = GREEN if play_button_right_rect.collidepoint(mouse_pos) else GRAY
+        pygame.draw.rect(screen, color, play_button_right_rect, border_radius=5)
+        pygame.draw.rect(screen, WHITE, play_button_right_rect, 2, border_radius=5)
+        txt = button_font.render("JOGAR", True, WHITE)
+        screen.blit(txt, (play_button_right_rect.centerx - txt.get_width()//2, play_button_right_rect.centery - txt.get_height()//2))
+    else:
+        color = GREEN if next_button_rect.collidepoint(mouse_pos) else GRAY
+        pygame.draw.rect(screen, color, next_button_rect, border_radius=5)
+        pygame.draw.rect(screen, WHITE, next_button_rect, 2, border_radius=5)
+        txt = button_font.render("PROXIMA", True, WHITE)
+        screen.blit(txt, (next_button_rect.centerx - txt.get_width()//2, next_button_rect.centery - txt.get_height()//2))
+        
+    if comic_index != 0:
+        base_c = 1
+        if current_level == 2: base_c = 5
+        elif current_level == 3: base_c = 6
+        
+        if comic_index > base_c:
+            color = GREEN if back_button_rect.collidepoint(mouse_pos) else GRAY
+            pygame.draw.rect(screen, color, back_button_rect, border_radius=5)
+            pygame.draw.rect(screen, WHITE, back_button_rect, 2, border_radius=5)
+            txt = button_font.render("VOLTAR", True, WHITE)
+            screen.blit(txt, (back_button_rect.centerx - txt.get_width()//2, back_button_rect.centery - txt.get_height()//2))
 
 def draw_lost_screen():
     screen.fill((0, 0, 0))
@@ -182,17 +237,31 @@ while run:
         if not is_fading:
             if in_cutscene:
                 if event.type == pygame.MOUSEBUTTONDOWN:
-                    if comic_index == 0: is_fading, next_state = True, "LEVEL_SELECT"
+                    if comic_index == 0:
+                        if play_button_center_rect.collidepoint(event.pos):
+                            is_fading, next_state = True, "LEVEL_SELECT"
                     else:
-                        if current_level == 1: max_c = 5
-                        elif current_level == 2: max_c = 6
-                        elif current_level == 3: max_c = 9
-                        else: max_c = comic_index + 1
+                        base_c = 1
+                        max_c = 5
+                        if current_level == 2: 
+                            base_c = 5
+                            max_c = 6
+                        elif current_level == 3: 
+                            base_c = 6
+                            max_c = 9
+                            
+                        is_last_comic = (comic_index == max_c - 1)
                         
-                        if comic_index + 1 < max_c: is_fading, next_state = True, "NEXT_COMIC"
+                        if is_last_comic:
+                            if play_button_right_rect.collidepoint(event.pos):
+                                if current_level == 1: pacifist_timer = pygame.time.get_ticks()
+                                is_fading, next_state = True, "GAMEPLAY"
                         else:
-                            if current_level == 1: pacifist_timer = pygame.time.get_ticks()
-                            is_fading, next_state = True, "GAMEPLAY"
+                            if next_button_rect.collidepoint(event.pos):
+                                is_fading, next_state = True, "NEXT_COMIC"
+                                
+                        if back_button_rect.collidepoint(event.pos) and comic_index > base_c:
+                            is_fading, next_state = True, "PREV_COMIC"
             elif level_selection:
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     for i, rect in enumerate(level_rects, 1):
@@ -338,6 +407,7 @@ while run:
         if fade_alpha >= 255:
             fade_alpha, is_fading = 255, False
             if next_state == "NEXT_COMIC": comic_index += 1
+            elif next_state == "PREV_COMIC": comic_index -= 1
             elif next_state == "START_SCREEN": in_cutscene, level_selection, game_started, game_over_lost = True, False, False, False
             elif next_state == "CUTSCENE": in_cutscene, level_selection, game_started, game_over_lost = True, False, False, False
             elif next_state == "TRANSITION_L1_L2":
