@@ -14,6 +14,17 @@ FPS = 60
 
 RED, YELLOW, WHITE, GREEN, GRAY, BLACK, MAGENTA = (255,0,0), (255,255,0), (255,255,255), (0,255,150), (50,50,50), (20,20,20), (255,0,255)
 
+def find_asset(filename):
+    if not os.path.exists("assets"): return filename
+    target_name = filename.split('/')[-1].rsplit('.', 1)[0].replace('ã', 'a').lower()
+    for root, _, files in os.walk("assets"):
+        for f in files:
+            if '.' in f:
+                f_name = f.rsplit('.', 1)[0].replace('ã', 'a').lower()
+                if f_name == target_name:
+                    return os.path.join(root, f)
+    return filename
+
 def load_safe(filepath, width=SCREEN_WIDTH, height=SCREEN_HEIGHT):
     try:
         return pygame.image.load(filepath).convert_alpha()
@@ -80,7 +91,8 @@ pacifist_timer = 0
 boss_phase_2 = False
 in_boss_transition = False
 transition_start_time = 0
-final_zoom_surface = None
+base_snap = None
+boss_center = (0, 0)
 
 level_rects = [
     pygame.Rect(150, 150, 200, 150),
@@ -192,16 +204,8 @@ while run:
             screen.blit(bg_image3, (0, 0))
             for f in [fighter_1, fighter_2]:
                 f.draw(screen)
-            snap = screen.copy()
-            
-            zoom = 1.7
-            zoomed = pygame.transform.scale(snap, (int(SCREEN_WIDTH * zoom), int(SCREEN_HEIGHT * zoom)))
-            bx, by = fighter_2.rect.center
-            offset_x = (SCREEN_WIDTH // 2) - int(bx * zoom)
-            offset_y = (SCREEN_HEIGHT // 2) - int(by * zoom)
-            
-            final_zoom_surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
-            final_zoom_surface.blit(zoomed, (offset_x, offset_y))
+            base_snap = screen.copy()
+            boss_center = (fighter_2.rect.centerx, fighter_2.rect.centery - 30)
 
         if not in_boss_transition:
             draw_interface()
@@ -246,16 +250,29 @@ while run:
                 f.draw(screen)
                 
             t = pygame.time.get_ticks() - transition_start_time
+            target_zoom = 1.4
+            
             if t < 1000:
-                alpha = int((t / 1000) * 255)
+                current_zoom = 1.0 + (target_zoom - 1.0) * (t / 1000)
+                alpha = 255
             elif t < 3000:
+                current_zoom = target_zoom
                 alpha = 255
             else:
+                current_zoom = target_zoom
                 alpha = max(0, 255 - int(((t - 3000) / 1000) * 255))
                 
-            if final_zoom_surface:
-                final_zoom_surface.set_alpha(alpha)
-                screen.blit(final_zoom_surface, (0, 0))
+            if base_snap:
+                zoomed = pygame.transform.scale(base_snap, (int(SCREEN_WIDTH * current_zoom), int(SCREEN_HEIGHT * current_zoom)))
+                bx, by = boss_center
+                offset_x = (SCREEN_WIDTH // 2) - int(bx * current_zoom)
+                offset_y = (SCREEN_HEIGHT // 2) - int(by * current_zoom)
+                
+                zoom_surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+                zoom_surface.blit(zoomed, (offset_x, offset_y))
+                zoom_surface.set_alpha(alpha)
+                
+                screen.blit(zoom_surface, (0, 0))
             
             if t >= 4000:
                 in_boss_transition = False
