@@ -28,15 +28,15 @@ def find_asset(filename):
 
 def load_safe(filepath, width=SCREEN_WIDTH, height=SCREEN_HEIGHT):
     try:
-        return pygame.image.load(filepath).convert_alpha()
+        return pygame.image.load(find_asset(filepath)).convert_alpha()
     except:
         surface = pygame.Surface((width, height))
         surface.fill(MAGENTA)
         return surface
 
-bg_image1 = pygame.transform.scale(load_safe("assets/images/Background_deserto.jpg"), (SCREEN_WIDTH, SCREEN_HEIGHT))
-bg_image2 = pygame.transform.scale(load_safe("assets/images/background2.png"), (SCREEN_WIDTH, SCREEN_HEIGHT))
-bg_image3 = pygame.transform.scale(load_safe("assets/images/backgroundcaverna.png"), (SCREEN_WIDTH, SCREEN_HEIGHT))
+bg_image1 = pygame.transform.scale(load_safe("Background_deserto.jpg"), (SCREEN_WIDTH, SCREEN_HEIGHT))
+bg_image2 = pygame.transform.scale(load_safe("background2.png"), (SCREEN_WIDTH, SCREEN_HEIGHT))
+bg_image3 = pygame.transform.scale(load_safe("backgroundcaverna.png"), (SCREEN_WIDTH, SCREEN_HEIGHT))
 
 try:
     menu_font = pygame.font.Font(find_asset("Pixel Digivolve.otf"), 64)
@@ -78,17 +78,24 @@ def scale_aspect(img):
     scale = min(SCREEN_WIDTH / img.get_width(), SCREEN_HEIGHT / img.get_height())
     return pygame.transform.scale(img, (int(img.get_width() * scale), int(img.get_height() * scale)))
 
-c0 = scale_aspect(load_safe("assets/images/quadrinhos/Quadrinhoinicial.png"))
-c1 = scale_aspect(load_safe("assets/images/quadrinhos/Quadrinho1.1.png"))
-c2 = scale_aspect(load_safe("assets/images/quadrinhos/Quadrinho1.2.png"))
-c3 = scale_aspect(load_safe("assets/images/quadrinhos/Quadrinho1.3.png"))
-c4 = scale_aspect(load_safe("assets/images/quadrinhos/Quadrinho1.4.png"))
-c5 = scale_aspect(load_safe("assets/images/quadrinhos/Quadrinho2.1.png"))
-c6 = scale_aspect(load_safe("assets/images/quadrinhos/Quadrinho3.1.png"))
-c7 = scale_aspect(load_safe("assets/images/quadrinhos/Quadrinhonivel3.2.png"))
-c8 = scale_aspect(load_safe("assets/images/quadrinhos/Quadrinho3.3.png"))
+c0 = scale_aspect(load_safe("Quadrinhoinicial.png"))
+c1 = scale_aspect(load_safe("Quadrinho1.1.png"))
+c2 = scale_aspect(load_safe("Quadrinho1.2.png"))
+c3 = scale_aspect(load_safe("Quadrinho1.3.png"))
+c4 = scale_aspect(load_safe("Quadrinho1.4.png"))
+c5 = scale_aspect(load_safe("Quadrinho2.1.png"))
+c6 = scale_aspect(load_safe("Quadrinho3.1.png"))
+c7 = scale_aspect(load_safe("Quadrinhonivel3.2.png"))
+c8 = scale_aspect(load_safe("Quadrinho3.3.png"))
+c9 = scale_aspect(load_safe("Quadrinho3.4.png"))
+c10 = scale_aspect(load_safe("Quadrinho3.5.png"))
+c11 = scale_aspect(load_safe("Quadrinho4.1.png"))
+c12 = scale_aspect(load_safe("Quadrinho4.2.png"))
+c13 = scale_aspect(load_safe("Quadrinho5.1.png"))
+c14 = scale_aspect(load_safe("Quadrinho5.2.png"))
+c15 = scale_aspect(load_safe("Quadrinho5.3.png"))
 
-comics = [c0, c1, c2, c3, c4, c5, c6, c7, c8]
+comics = [c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15]
 
 game_started = level_selection = is_fading = game_over_lost = pacifist_broken = False
 in_cutscene = True
@@ -113,9 +120,8 @@ level_rects = [
     pygame.Rect(150, 150, 200, 150),
     pygame.Rect(400, 150, 200, 150),
     pygame.Rect(650, 150, 200, 150),
-    pygame.Rect(150, 350, 200, 150),
-    pygame.Rect(400, 350, 200, 150),
-    pygame.Rect(650, 350, 200, 150)
+    pygame.Rect(275, 350, 200, 150),
+    pygame.Rect(525, 350, 200, 150)
 ]
 
 fighter_1 = Fighter(200, 380, is_ai=False)
@@ -139,7 +145,7 @@ def load_transicao_sprites():
 load_transicao_sprites()
 
 def draw_interface():
-    if current_level == 3: bg = bg_image3
+    if current_level >= 3: bg = bg_image3
     elif current_level == 2: bg = bg_image2
     else: bg = bg_image1
     screen.blit(bg, (0, 0))
@@ -174,9 +180,20 @@ def draw_cutscene():
     
     mouse_pos = pygame.mouse.get_pos()
     
+    base_c = 1
     max_c = 5
-    if current_level == 2: max_c = 6
-    elif current_level == 3: max_c = 9
+    if current_level == 2: 
+        base_c = 5
+        max_c = 6
+    elif current_level == 3: 
+        base_c = 6
+        max_c = 11
+    elif current_level == 4:
+        base_c = 11
+        max_c = 13
+    elif current_level == 5:
+        base_c = 13
+        max_c = 16
     
     is_last_comic = (comic_index != 0 and comic_index == max_c - 1)
     
@@ -199,17 +216,12 @@ def draw_cutscene():
         txt = button_font.render("PROXIMA", True, WHITE)
         screen.blit(txt, (next_button_rect.centerx - txt.get_width()//2, next_button_rect.centery - txt.get_height()//2))
         
-    if comic_index != 0:
-        base_c = 1
-        if current_level == 2: base_c = 5
-        elif current_level == 3: base_c = 6
-        
-        if comic_index > base_c:
-            color = GREEN if back_button_rect.collidepoint(mouse_pos) else GRAY
-            pygame.draw.rect(screen, color, back_button_rect, border_radius=5)
-            pygame.draw.rect(screen, WHITE, back_button_rect, 2, border_radius=5)
-            txt = button_font.render("VOLTAR", True, WHITE)
-            screen.blit(txt, (back_button_rect.centerx - txt.get_width()//2, back_button_rect.centery - txt.get_height()//2))
+    if comic_index != 0 and comic_index > base_c:
+        color = GREEN if back_button_rect.collidepoint(mouse_pos) else GRAY
+        pygame.draw.rect(screen, color, back_button_rect, border_radius=5)
+        pygame.draw.rect(screen, WHITE, back_button_rect, 2, border_radius=5)
+        txt = button_font.render("VOLTAR", True, WHITE)
+        screen.blit(txt, (back_button_rect.centerx - txt.get_width()//2, back_button_rect.centery - txt.get_height()//2))
 
 def draw_lost_screen():
     screen.fill((0, 0, 0))
@@ -219,8 +231,12 @@ def draw_lost_screen():
         msg = "Voce foi agressivo demais ou foi derrotado!"
     elif current_level == 2:
         msg = "O vampiro sugou toda sua energia!"
-    else:
+    elif current_level == 3:
         msg = "A familia de gnomos te esmagou!"
+    elif current_level == 4:
+        msg = "A vinganca nao tem fim..."
+    else:
+        msg = "O espaco nao perdoa fracos!"
         
     t2 = go_msg_font.render(msg, True, RED)
     p = menu_subfont.render("Clique para voltar ao menu", True, GRAY)
@@ -248,7 +264,13 @@ while run:
                             max_c = 6
                         elif current_level == 3: 
                             base_c = 6
-                            max_c = 9
+                            max_c = 11
+                        elif current_level == 4:
+                            base_c = 11
+                            max_c = 13
+                        elif current_level == 5:
+                            base_c = 13
+                            max_c = 16
                             
                         is_last_comic = (comic_index == max_c - 1)
                         
@@ -282,6 +304,14 @@ while run:
                             elif current_level == 3:
                                 fighter_2 = BossGnomo(700, 380)
                                 comic_index = 6
+                                is_fading, next_state = True, "CUTSCENE"
+                            elif current_level == 4:
+                                fighter_2 = Fighter(700, 380, is_ai=True, behavior="bully")
+                                comic_index = 11
+                                is_fading, next_state = True, "CUTSCENE"
+                            elif current_level == 5:
+                                fighter_2 = Fighter(700, 380, is_ai=True, behavior="bully")
+                                comic_index = 13
                                 is_fading, next_state = True, "CUTSCENE"
                             else:
                                 fighter_2 = Fighter(700, 380, is_ai=True, behavior="bully")
@@ -343,6 +373,12 @@ while run:
             if current_level == 2 and fighter_2.health <= 0 and not is_fading:
                 comic_index = 6
                 is_fading, next_state = True, "TRANSITION_L2_L3"
+            if current_level == 3 and fighter_2.health <= 0 and not is_fading:
+                comic_index = 11
+                is_fading, next_state = True, "TRANSITION_L3_L4"
+            if current_level == 4 and fighter_2.health <= 0 and not is_fading:
+                comic_index = 13
+                is_fading, next_state = True, "TRANSITION_L4_L5"
                 
         else:
             draw_interface()
@@ -417,6 +453,14 @@ while run:
             elif next_state == "TRANSITION_L2_L3":
                 current_level, fighter_1 = 3, Fighter(200, 380, is_ai=False)
                 fighter_2 = BossGnomo(700, 380)
+                in_cutscene, level_selection, game_started, game_over_lost = True, False, False, False
+            elif next_state == "TRANSITION_L3_L4":
+                current_level, fighter_1 = 4, Fighter(200, 380, is_ai=False)
+                fighter_2 = Fighter(700, 380, is_ai=True, behavior="bully")
+                in_cutscene, level_selection, game_started, game_over_lost = True, False, False, False
+            elif next_state == "TRANSITION_L4_L5":
+                current_level, fighter_1 = 5, Fighter(200, 380, is_ai=False)
+                fighter_2 = Fighter(700, 380, is_ai=True, behavior="bully")
                 in_cutscene, level_selection, game_started, game_over_lost = True, False, False, False
             elif next_state == "GAMEPLAY": game_started, level_selection, in_cutscene, game_over_lost = True, False, False, False
             elif next_state == "LEVEL_SELECT": level_selection, game_started, in_cutscene, game_over_lost = True, False, False, False
