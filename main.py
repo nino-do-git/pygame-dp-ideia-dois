@@ -7,7 +7,7 @@ from vampire import Vampire
 pygame.init()
 
 SCREEN_WIDTH, SCREEN_HEIGHT = 1000, 600
-screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.FULLSCREEN | pygame.SCALED)
 pygame.display.set_caption("Eclipse Lunar")
 
 clock = pygame.time.Clock()
@@ -98,7 +98,7 @@ c15 = scale_aspect(load_safe("Quadrinho5.3.png"))
 
 comics = [c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15]
 
-game_started = level_selection = is_fading = game_over_lost = pacifist_broken = False
+game_started = level_selection = is_fading = game_over_lost = pacifist_broken = in_credits = False
 in_cutscene = True
 next_state = None
 fade_alpha = 0
@@ -108,6 +108,10 @@ current_level = 1
 unlocked_level = 1
 comic_index = 0
 pacifist_timer = 0
+credits_y = SCREEN_HEIGHT
+
+cheat_active = False
+cheat_text = ""
 
 boss_phase_2 = False
 in_boss_transition = False
@@ -121,6 +125,28 @@ transicao_timer = 0
 in_level_5_ending = False
 level_5_end_time = 0
 end_snap = None
+
+credits_text = [
+    "ECLIPSE LUNAR",
+    "",
+    "Jogo produzido por:",
+    "Marino Dias",
+    "",
+    "A Historia:",
+    "Perdido no cosmos e longe de casa,",
+    "um astronauta desbravou mundos desconhecidos.",
+    "",
+    "De desertos escaldantes a cavernas sombrias,",
+    "ele enfrentou criaturas implacaveis, vampiros",
+    "sedentos e uma vingativa familia de gnomos.",
+    "",
+    "Ele lutou. Ele sobreviveu.",
+    "Mas ao retornar ao vacuo silencioso do espaco,",
+    "percebeu que de nada adianta fugir...",
+    "Quando o seu maior inimigo e voce mesmo.",
+    "",
+    "OBRIGADO POR JOGAR!"
+]
 
 level_rects = [
     pygame.Rect(150, 150, 200, 150),
@@ -263,6 +289,27 @@ while run:
     clock.tick(FPS)
     for event in pygame.event.get():
         if event.type == pygame.QUIT: run = False
+        
+        if event.type == pygame.KEYDOWN:
+            if cheat_active:
+                if event.key == pygame.K_RETURN:
+                    if cheat_text.upper() == "GOAT":
+                        unlocked_level = 5
+                    cheat_active = False
+                    cheat_text = ""
+                elif event.key == pygame.K_ESCAPE:
+                    cheat_active = False
+                    cheat_text = ""
+                elif event.key == pygame.K_BACKSPACE:
+                    cheat_text = cheat_text[:-1]
+                else:
+                    cheat_text += event.unicode
+                continue
+            elif event.key == pygame.K_t and not cheat_active:
+                cheat_active = True
+                cheat_text = ""
+                continue
+
         if not is_fading:
             if in_cutscene:
                 if event.type == pygame.MOUSEBUTTONDOWN:
@@ -336,6 +383,9 @@ while run:
                     is_fading, next_state = True, "START_SCREEN"
             elif game_over_lost:
                 if event.type == pygame.MOUSEBUTTONDOWN: is_fading, next_state = True, "LEVEL_SELECT"
+            elif in_credits:
+                if event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.KEYDOWN:
+                    is_fading, next_state = True, "START_SCREEN"
 
     if game_started:
         if current_level == 5 and (fighter_1.health <= 0 or fighter_2.health <= 0) and not in_level_5_ending and not is_fading:
@@ -357,8 +407,7 @@ while run:
             screen.blit(dissolve_surf, (0, 0))
             
             if t > 5000 and not is_fading:
-                comic_index = 0
-                is_fading, next_state = True, "START_SCREEN"
+                is_fading, next_state = True, "CREDITS"
 
         elif current_level == 3 and fighter_2.health <= fighter_2.max_health / 2 and not boss_phase_2:
             boss_phase_2 = True
@@ -479,6 +528,31 @@ while run:
     elif level_selection: draw_levels()
     elif in_cutscene: draw_cutscene()
     elif game_over_lost: draw_lost_screen()
+    elif in_credits:
+        screen.fill(BLACK)
+        y_offset = credits_y
+        for line in credits_text:
+            if line == "ECLIPSE LUNAR" or line == "OBRIGADO POR JOGAR!":
+                txt_surface = menu_font.render(line, True, WHITE)
+            elif line == "Jogo produzido por:" or line == "A Historia:":
+                txt_surface = button_font.render(line, True, YELLOW)
+            else:
+                txt_surface = button_font.render(line, True, WHITE)
+            
+            screen.blit(txt_surface, (SCREEN_WIDTH//2 - txt_surface.get_width()//2, y_offset))
+            y_offset += 40
+            if line == "ECLIPSE LUNAR" or line == "Marino Dias" or line == "Quando o seu maior inimigo e voce mesmo.":
+                y_offset += 30
+        
+        credits_y -= 1.5
+        if y_offset < 0 and not is_fading:
+            is_fading, next_state = True, "START_SCREEN"
+
+    if cheat_active:
+        pygame.draw.rect(screen, (30, 30, 30), (0, SCREEN_HEIGHT - 60, SCREEN_WIDTH, 60))
+        pygame.draw.rect(screen, WHITE, (0, SCREEN_HEIGHT - 60, SCREEN_WIDTH, 60), 2)
+        cheat_prompt = button_font.render("CHEAT MODE: " + cheat_text, True, YELLOW)
+        screen.blit(cheat_prompt, (20, SCREEN_HEIGHT - 45))
 
     if is_fading:
         fade_alpha += 7
@@ -486,7 +560,12 @@ while run:
             fade_alpha, is_fading = 255, False
             if next_state == "NEXT_COMIC": comic_index += 1
             elif next_state == "PREV_COMIC": comic_index -= 1
-            elif next_state == "START_SCREEN": in_cutscene, level_selection, game_started, game_over_lost, in_level_5_ending = True, False, False, False, False
+            elif next_state == "START_SCREEN": 
+                in_cutscene, level_selection, game_started, game_over_lost, in_level_5_ending, in_credits = True, False, False, False, False, False
+                comic_index = 0
+            elif next_state == "CREDITS": 
+                in_credits, in_level_5_ending, game_started, in_cutscene, level_selection, game_over_lost = True, False, False, False, False, False
+                credits_y = SCREEN_HEIGHT
             elif next_state == "CUTSCENE": in_cutscene, level_selection, game_started, game_over_lost = True, False, False, False
             elif next_state == "TRANSITION_L1_L2":
                 current_level, fighter_1 = 2, Fighter(200, 380, is_ai=False)
