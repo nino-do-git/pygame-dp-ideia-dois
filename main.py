@@ -37,6 +37,7 @@ def load_safe(filepath, width=SCREEN_WIDTH, height=SCREEN_HEIGHT):
 bg_image1 = pygame.transform.scale(load_safe("Background_deserto.jpg"), (SCREEN_WIDTH, SCREEN_HEIGHT))
 bg_image2 = pygame.transform.scale(load_safe("background2.png"), (SCREEN_WIDTH, SCREEN_HEIGHT))
 bg_image3 = pygame.transform.scale(load_safe("backgroundcaverna.png"), (SCREEN_WIDTH, SCREEN_HEIGHT))
+bg_image4 = pygame.transform.scale(load_safe("planodefundoFIM!.jpg"), (SCREEN_WIDTH, SCREEN_HEIGHT))
 
 try:
     menu_font = pygame.font.Font(find_asset("Pixel Digivolve.otf"), 64)
@@ -64,14 +65,14 @@ except:
 menu_subfont = pygame.font.SysFont(None, 36)
 
 txt_jogar = button_font.render("JOGAR", True, WHITE)
-play_button_center_rect = pygame.Rect(SCREEN_WIDTH//2 - txt_jogar.get_width()//2 - 15, SCREEN_HEIGHT - 70, txt_jogar.get_width() + 30, txt_jogar.get_height() + 10)
-play_button_right_rect = pygame.Rect(SCREEN_WIDTH - txt_jogar.get_width() - 30, SCREEN_HEIGHT - 70, txt_jogar.get_width() + 20, txt_jogar.get_height() + 10)
+play_button_center_rect = pygame.Rect(SCREEN_WIDTH//2 - txt_jogar.get_width()//2 - 40, SCREEN_HEIGHT - 80, txt_jogar.get_width() + 80, txt_jogar.get_height() + 30)
+play_button_right_rect = pygame.Rect(SCREEN_WIDTH - txt_jogar.get_width() - 50, SCREEN_HEIGHT - 80, txt_jogar.get_width() + 40, txt_jogar.get_height() + 30)
 
 txt_proxima = button_font.render("PROXIMA", True, WHITE)
-next_button_rect = pygame.Rect(SCREEN_WIDTH - txt_proxima.get_width() - 30, SCREEN_HEIGHT - 70, txt_proxima.get_width() + 20, txt_proxima.get_height() + 10)
+next_button_rect = pygame.Rect(SCREEN_WIDTH - txt_proxima.get_width() - 50, SCREEN_HEIGHT - 80, txt_proxima.get_width() + 40, txt_proxima.get_height() + 30)
 
 txt_voltar = button_font.render("VOLTAR", True, WHITE)
-back_button_rect = pygame.Rect(10, SCREEN_HEIGHT - 70, txt_voltar.get_width() + 20, txt_voltar.get_height() + 10)
+back_button_rect = pygame.Rect(10, SCREEN_HEIGHT - 80, txt_voltar.get_width() + 40, txt_voltar.get_height() + 30)
 
 def scale_aspect(img):
     if img.get_width() == 0 or img.get_height() == 0: return img
@@ -104,6 +105,7 @@ fade_alpha = 0
 fade_surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
 fade_surface.fill((0,0,0))
 current_level = 1
+unlocked_level = 1
 comic_index = 0
 pacifist_timer = 0
 
@@ -116,12 +118,16 @@ transicao_anim = []
 transicao_index = 0
 transicao_timer = 0
 
+in_level_5_ending = False
+level_5_end_time = 0
+end_snap = None
+
 level_rects = [
     pygame.Rect(150, 150, 200, 150),
     pygame.Rect(400, 150, 200, 150),
     pygame.Rect(650, 150, 200, 150),
-    pygame.Rect(275, 350, 200, 150),
-    pygame.Rect(525, 350, 200, 150)
+    pygame.Rect(225, 350, 200, 150),
+    pygame.Rect(475, 325, 300, 200)
 ]
 
 fighter_1 = Fighter(200, 380, is_ai=False)
@@ -145,7 +151,8 @@ def load_transicao_sprites():
 load_transicao_sprites()
 
 def draw_interface():
-    if current_level >= 3: bg = bg_image3
+    if current_level == 5: bg = bg_image4
+    elif current_level >= 3: bg = bg_image3
     elif current_level == 2: bg = bg_image2
     else: bg = bg_image1
     screen.blit(bg, (0, 0))
@@ -165,10 +172,16 @@ def draw_levels():
     mouse_pos = pygame.mouse.get_pos()
     
     for i, rect in enumerate(level_rects, 1):
-        color = GREEN if rect.collidepoint(mouse_pos) else GRAY
+        if i <= unlocked_level:
+            color = GREEN if rect.collidepoint(mouse_pos) else GRAY
+            text_color = WHITE
+        else:
+            color = GRAY
+            text_color = GRAY
+            
         pygame.draw.rect(screen, color, rect, border_radius=10)
-        pygame.draw.rect(screen, WHITE, rect, 3, border_radius=10)
-        txt = level_font.render(str(i), True, WHITE)
+        pygame.draw.rect(screen, text_color, rect, 3, border_radius=10)
+        txt = level_font.render("FIM!" if i == 5 else str(i), True, text_color)
         screen.blit(txt, (rect.centerx - txt.get_width()//2, rect.centery - txt.get_height()//2))
 
 def draw_cutscene():
@@ -287,11 +300,12 @@ while run:
             elif level_selection:
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     for i, rect in enumerate(level_rects, 1):
-                        if rect.collidepoint(event.pos):
+                        if rect.collidepoint(event.pos) and i <= unlocked_level:
                             current_level = i
                             fighter_1 = Fighter(200, 380, is_ai=False)
                             boss_phase_2 = False
                             in_boss_transition = False
+                            in_level_5_ending = False
                             if current_level == 1:
                                 fighter_2 = Fighter(700, 380, is_ai=True, behavior="passive")
                                 pacifist_broken = False
@@ -310,7 +324,7 @@ while run:
                                 comic_index = 11
                                 is_fading, next_state = True, "CUTSCENE"
                             elif current_level == 5:
-                                fighter_2 = Fighter(700, 380, is_ai=True, behavior="bully")
+                                fighter_2 = Fighter(700, 380, is_ai=True, behavior="bully", character="astronaut")
                                 comic_index = 13
                                 is_fading, next_state = True, "CUTSCENE"
                             else:
@@ -324,7 +338,29 @@ while run:
                 if event.type == pygame.MOUSEBUTTONDOWN: is_fading, next_state = True, "LEVEL_SELECT"
 
     if game_started:
-        if current_level == 3 and fighter_2.health <= fighter_2.max_health / 2 and not boss_phase_2:
+        if current_level == 5 and (fighter_1.health <= 0 or fighter_2.health <= 0) and not in_level_5_ending and not is_fading:
+            in_level_5_ending = True
+            level_5_end_time = pygame.time.get_ticks()
+            screen.blit(bg_image4, (0, 0))
+            fighter_1.draw(screen)
+            fighter_2.draw(screen)
+            end_snap = screen.copy()
+
+        if in_level_5_ending:
+            screen.blit(end_snap, (0, 0))
+            t = pygame.time.get_ticks() - level_5_end_time
+            
+            alpha = min(255, int((t / 4000) * 255))
+            dissolve_surf = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+            dissolve_surf.fill(BLACK)
+            dissolve_surf.set_alpha(alpha)
+            screen.blit(dissolve_surf, (0, 0))
+            
+            if t > 5000 and not is_fading:
+                comic_index = 0
+                is_fading, next_state = True, "START_SCREEN"
+
+        elif current_level == 3 and fighter_2.health <= fighter_2.max_health / 2 and not boss_phase_2:
             boss_phase_2 = True
             in_boss_transition = True
             transition_start_time = pygame.time.get_ticks()
@@ -337,50 +373,7 @@ while run:
             base_snap = screen.copy()
             boss_center = (fighter_2.rect.centerx, fighter_2.rect.centery - 30)
 
-        if not in_boss_transition:
-            draw_interface()
-            fighter_1.move(SCREEN_WIDTH, SCREEN_HEIGHT, fighter_2)
-            fighter_2.ai_logic(SCREEN_WIDTH, SCREEN_HEIGHT, fighter_1)
-            
-            if current_level == 1:
-                if fighter_2.health < fighter_2.max_health:
-                    pacifist_broken = True
-                    fighter_2.behavior = "bully"
-                if not pacifist_broken:
-                    p_time = pygame.time.get_ticks() - pacifist_timer
-                    if p_time > 3000:
-                        rem_ms = 13000 - p_time
-                        if rem_ms > 0:
-                            bw, bh = 400, 12
-                            fw = (rem_ms / 10000) * bw
-                            color = GREEN if rem_ms > 4000 else YELLOW
-                            if rem_ms < 2000: color = RED
-                            pygame.draw.rect(screen, WHITE, (SCREEN_WIDTH//2 - bw//2 - 2, 88, bw + 4, bh + 4), border_radius=10)
-                            pygame.draw.rect(screen, BLACK, (SCREEN_WIDTH//2 - bw//2, 90, bw, bh), border_radius=10)
-                            pygame.draw.rect(screen, color, (SCREEN_WIDTH//2 - bw//2, 90, fw, bh), border_radius=10)
-                            txt = t_font.render(str(int(rem_ms // 1000) + 1), True, WHITE)
-                            screen.blit(txt, (SCREEN_WIDTH//2 - txt.get_width()//2, 40))
-                    if p_time >= 13000 and not is_fading:
-                        comic_index = 5
-                        is_fading, next_state = True, "TRANSITION_L1_L2"
-                        
-            for f in [fighter_1, fighter_2]:
-                f.update()
-                f.draw(screen)
-                
-            if fighter_1.health <= 0 or (current_level == 1 and fighter_2.health <= 0) and not is_fading:
-                is_fading, next_state = True, "LOST_SCREEN"
-            if current_level == 2 and fighter_2.health <= 0 and not is_fading:
-                comic_index = 6
-                is_fading, next_state = True, "TRANSITION_L2_L3"
-            if current_level == 3 and fighter_2.health <= 0 and not is_fading:
-                comic_index = 11
-                is_fading, next_state = True, "TRANSITION_L3_L4"
-            if current_level == 4 and fighter_2.health <= 0 and not is_fading:
-                comic_index = 13
-                is_fading, next_state = True, "TRANSITION_L4_L5"
-                
-        else:
+        elif in_boss_transition:
             draw_interface()
             fighter_1.draw(screen)
             
@@ -434,6 +427,55 @@ while run:
                 in_boss_transition = False
                 fighter_2.image = fighter_2.idle_pai[0]
 
+        else:
+            draw_interface()
+            fighter_1.move(SCREEN_WIDTH, SCREEN_HEIGHT, fighter_2)
+            fighter_2.ai_logic(SCREEN_WIDTH, SCREEN_HEIGHT, fighter_1)
+            
+            if current_level == 1:
+                if fighter_2.health < fighter_2.max_health:
+                    pacifist_broken = True
+                    fighter_2.behavior = "bully"
+                if not pacifist_broken:
+                    p_time = pygame.time.get_ticks() - pacifist_timer
+                    if p_time > 3000:
+                        rem_ms = 13000 - p_time
+                        if rem_ms > 0:
+                            bw, bh = 400, 12
+                            fw = (rem_ms / 10000) * bw
+                            color = GREEN if rem_ms > 4000 else YELLOW
+                            if rem_ms < 2000: color = RED
+                            pygame.draw.rect(screen, WHITE, (SCREEN_WIDTH//2 - bw//2 - 2, 88, bw + 4, bh + 4), border_radius=10)
+                            pygame.draw.rect(screen, BLACK, (SCREEN_WIDTH//2 - bw//2, 90, bw, bh), border_radius=10)
+                            pygame.draw.rect(screen, color, (SCREEN_WIDTH//2 - bw//2, 90, fw, bh), border_radius=10)
+                            txt = t_font.render(str(int(rem_ms // 1000) + 1), True, WHITE)
+                            screen.blit(txt, (SCREEN_WIDTH//2 - txt.get_width()//2, 40))
+                    if p_time >= 13000 and not is_fading:
+                        comic_index = 5
+                        unlocked_level = max(unlocked_level, 2)
+                        is_fading, next_state = True, "TRANSITION_L1_L2"
+                        
+            for f in [fighter_1, fighter_2]:
+                f.update()
+                f.draw(screen)
+                
+            if current_level != 5:
+                if fighter_1.health <= 0 or (current_level == 1 and fighter_2.health <= 0) and not is_fading:
+                    is_fading, next_state = True, "LOST_SCREEN"
+                    
+            if current_level == 2 and fighter_2.health <= 0 and not is_fading:
+                comic_index = 6
+                unlocked_level = max(unlocked_level, 3)
+                is_fading, next_state = True, "TRANSITION_L2_L3"
+            if current_level == 3 and fighter_2.health <= 0 and not is_fading:
+                comic_index = 11
+                unlocked_level = max(unlocked_level, 4)
+                is_fading, next_state = True, "TRANSITION_L3_L4"
+            if current_level == 4 and fighter_2.health <= 0 and not is_fading:
+                comic_index = 13
+                unlocked_level = max(unlocked_level, 5)
+                is_fading, next_state = True, "TRANSITION_L4_L5"
+
     elif level_selection: draw_levels()
     elif in_cutscene: draw_cutscene()
     elif game_over_lost: draw_lost_screen()
@@ -444,7 +486,7 @@ while run:
             fade_alpha, is_fading = 255, False
             if next_state == "NEXT_COMIC": comic_index += 1
             elif next_state == "PREV_COMIC": comic_index -= 1
-            elif next_state == "START_SCREEN": in_cutscene, level_selection, game_started, game_over_lost = True, False, False, False
+            elif next_state == "START_SCREEN": in_cutscene, level_selection, game_started, game_over_lost, in_level_5_ending = True, False, False, False, False
             elif next_state == "CUTSCENE": in_cutscene, level_selection, game_started, game_over_lost = True, False, False, False
             elif next_state == "TRANSITION_L1_L2":
                 current_level, fighter_1 = 2, Fighter(200, 380, is_ai=False)
@@ -460,10 +502,10 @@ while run:
                 in_cutscene, level_selection, game_started, game_over_lost = True, False, False, False
             elif next_state == "TRANSITION_L4_L5":
                 current_level, fighter_1 = 5, Fighter(200, 380, is_ai=False)
-                fighter_2 = Fighter(700, 380, is_ai=True, behavior="bully")
+                fighter_2 = Fighter(700, 380, is_ai=True, behavior="bully", character="astronaut")
                 in_cutscene, level_selection, game_started, game_over_lost = True, False, False, False
-            elif next_state == "GAMEPLAY": game_started, level_selection, in_cutscene, game_over_lost = True, False, False, False
-            elif next_state == "LEVEL_SELECT": level_selection, game_started, in_cutscene, game_over_lost = True, False, False, False
+            elif next_state == "GAMEPLAY": game_started, level_selection, in_cutscene, game_over_lost, in_level_5_ending = True, False, False, False, False
+            elif next_state == "LEVEL_SELECT": level_selection, game_started, in_cutscene, game_over_lost, in_level_5_ending = True, False, False, False, False
             elif next_state == "LOST_SCREEN": game_over_lost, game_started, level_selection, in_cutscene = True, False, False, False
     elif fade_alpha > 0: fade_alpha -= 7
     if fade_alpha > 0:
